@@ -35,6 +35,8 @@
 #define COMMAND_READ            0x02
 #define COMMAND_UPDATE_EXTRA    0x20
 #define COMMAND_WRITE           0x12
+#define COMMAND_GEN_KEY         0x40
+#define COMMAND_ECC_SIGN        0x41
 
 /* Command responses */
 #define SUCCESS_RESPONSE        0x00
@@ -43,7 +45,7 @@
 #define EXECUTION_ERROR         0x0F
 #define IM_AWAKE                0x11
 #define CRC_OR_COMM_ERROR       0xFF
-
+#define ECC_ERROR               0x05
 
 #define MAX_NUM_DATA_SLOTS      16
 
@@ -76,6 +78,8 @@
 #define UPDATE_EXTRA_AVG_EXEC 8000000
 #define WRITE_AVG_EXEC 4000000
 #define RANDOM_AVG_EXEC 11000000
+#define GEN_KEY_AVG_EXEC 9000000
+#define ECC_SIGN_AVG_EXEC 33000000
 
 #define DERIVE_KEY_MAX_EXEC 62000000
 #define DEV_REV_MAX_EXEC 2000000
@@ -89,8 +93,8 @@
 #define RANDOM_MAX_EXEC 50000000
 #define READ_MAX_EXEC 4000000
 #define UPDATE_EXTRA_MAX_EXEC 12000000
-#define WRITE_MAX_EXEC 42000000
-
-
+#define WRITE_MAX_EXEC    42000000
+#define GEN_KEY_MAX_EXEC  96000000
+#define ECC_SIGN_MAX_EXEC 38000000
 
 #endif /* DEFS_H */

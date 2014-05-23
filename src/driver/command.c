@@ -149,6 +149,12 @@ void print_command (struct Command_ATSHA204 *c)
     case COMMAND_WRITE:
       opcode = "Command Write";
       break;
+    case COMMAND_GEN_KEY:
+      opcode = "Command Gen ECC Key";
+      break;
+    case COMMAND_ECC_SIGN:
+      opcode = "Command ECC Sign Key";
+      break;
     default:
       assert (false);
     }
@@ -635,6 +641,8 @@ bool is_locked (int fd, enum DATA_ZONE zone)
         result = false;
       else
         result = true;
+
+      free_octet_buffer (config_data);
     }
 
   return result;
@@ -653,7 +661,7 @@ bool is_data_locked (int fd)
 
 struct octet_buffer get_config_zone (fd)
 {
-  const unsigned int SIZE_OF_CONFIG_ZONE = 88;
+  const unsigned int SIZE_OF_CONFIG_ZONE = 128;
   const unsigned int NUM_OF_WORDS = SIZE_OF_CONFIG_ZONE / 4;
 
   struct octet_buffer buf = make_buffer (SIZE_OF_CONFIG_ZONE);
@@ -736,6 +744,10 @@ bool lock (int fd, enum DATA_ZONE zone, uint16_t crc)
       assert (false);
     }
 
+  /* ignore the crc */
+  param1 |= 0x80;
+  crc = 0;
+
   struct Command_ATSHA204 c = make_command ();
 
   set_opcode (&c, COMMAND_LOCK);
@@ -804,7 +816,7 @@ bool set_otp_zone (int fd, struct octet_buffer *otp_zone)
   assert (strlen (PACKAGE_VERSION) < 10);
 
   /* Setup the fixed OTP data zone */
-  sprintf ((char *)part1, "CRYPTOTRONIX HASHLET REV: A");
+  sprintf ((char *)part1, "CRYPTOTRONIX ECLET REV: A");
   sprintf ((char *)part2, "SOFTWARE VERSION: %s", PACKAGE_VERSION);
 
   bool success = true;
@@ -994,6 +1006,19 @@ struct octet_buffer get_nonce (int fd)
   return nonce;
 }
 
+
+bool load_nonce (int fd, struct octet_buffer data)
+{
+  assert (data.ptr != NULL && data.len == 32);
+
+  struct octet_buffer rsp = gen_nonce (fd, data);
+
+  if (NULL == rsp.ptr || *rsp.ptr != 0)
+    return false;
+  else
+    return true;
+
+}
 
 struct octet_buffer gen_temp_key_from_nonce (int fd, struct octet_buffer random,
                                              const struct octet_buffer otp)
@@ -1230,6 +1255,90 @@ bool gen_digest (int fd, enum DATA_ZONE zone, unsigned int slot)
   return result;
 
 
+
+
+}
+
+struct octet_buffer gen_ecc_key (int fd, uint8_t key_id, bool private)
+{
+
+  assert (key_id <= 15);
+
+  uint8_t param2[2] = {0};
+  uint8_t param1 = 0;
+
+  param2[0] = key_id;
+
+  if (private)
+    {
+      param1 = 0x04; /* Private key */
+    }
+  else
+    {
+      param1 = 0x00; /* Gen public key from private key in the slot */
+    }
+
+  struct octet_buffer pub_key = make_buffer (64);
+
+  struct Command_ATSHA204 c = make_command ();
+
+  set_opcode (&c, COMMAND_GEN_KEY);
+  set_param1 (&c, param1);
+  set_param2 (&c, param2);
+  set_data (&c, NULL, 0);
+  set_execution_time (&c, 0, GEN_KEY_AVG_EXEC);
+
+  if (RSP_SUCCESS == process_command (fd, &c, pub_key.ptr, pub_key.len))
+    {
+      CTX_LOG (DEBUG, "Gen key success");
+    }
+  else
+    {
+      CTX_LOG (DEBUG, "Gen key failure");
+      free_octet_buffer (pub_key);
+      pub_key.ptr = NULL;
+    }
+
+  return pub_key;
+
+
+
+
+}
+
+
+struct octet_buffer ecc_sign (int fd, uint8_t key_id)
+{
+
+  assert (key_id <= 15);
+
+  uint8_t param2[2] = {0};
+  uint8_t param1 = 0x80; /* external signatures only */
+
+  param2[0] = key_id;
+
+  struct octet_buffer signature = make_buffer (64);
+
+  struct Command_ATSHA204 c = make_command ();
+
+  set_opcode (&c, COMMAND_ECC_SIGN);
+  set_param1 (&c, param1);
+  set_param2 (&c, param2);
+  set_data (&c, NULL, 0);
+  set_execution_time (&c, 0, ECC_SIGN_MAX_EXEC);
+
+  if (RSP_SUCCESS == process_command (fd, &c, signature.ptr, signature.len))
+    {
+      CTX_LOG (DEBUG, "Sign success");
+    }
+  else
+    {
+      CTX_LOG (DEBUG, "Sign failure");
+      free_octet_buffer (signature);
+      signature.ptr = NULL;
+    }
+
+  return signature;
 
 
 }

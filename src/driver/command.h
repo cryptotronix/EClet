@@ -433,4 +433,11 @@ struct octet_buffer gen_temp_key_from_digest (int fd,
                                               const struct octet_buffer prev_temp_key,
                                               unsigned int slot,
                                               const struct octet_buffer key);
+
+struct octet_buffer gen_ecc_key (int fd, uint8_t key_id, bool private);
+
+struct octet_buffer ecc_sign (int fd, uint8_t key_id);
+
+bool load_nonce (int fd, struct octet_buffer data);
+
 #endif /* COMMAND_H */

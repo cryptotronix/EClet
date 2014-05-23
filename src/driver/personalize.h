@@ -95,4 +95,6 @@ const char* get_key_store_name ();
  * there is an error.
  */
 struct key_container* import_keys (const char* filename);
+
+bool lock_config_zone (int fd, enum DEVICE_STATE state);
 #endif

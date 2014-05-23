@@ -26,6 +26,19 @@
 #include "command.h"
 #include <stdlib.h>
 
+struct slot_config make_ecc_key_slot_config ()
+{
+  return make_slot_config (1,     /* External Signatures are Enabled */
+                           false, /* Check Only */
+                           false, /* Single Use */
+                           false, /* Encrypted Read */
+                           true,  /* Is secret */
+                           0,     /* Slot for encrypted writes*/
+                           true,  /* Derive Key also allows GenKy */
+                           NEVER);/* Write configuration */
+
+}
+
 struct slot_config make_slot_config (unsigned int read_key, bool check_only,
                                      bool single_use, bool encrypted_read,
                                      bool is_secret, unsigned int write_key,
@@ -121,6 +134,11 @@ void serialize_slot_config (struct slot_config *s, uint8_t *config)
       assert (false);
 
     }
+
+  /* slot configs are little endian */
+  uint8_t tmp = config[0];
+  config[0] = config[1];
+  config[1] = tmp;
 
   CTX_LOG (DEBUG, "Slot Config set: %02x %02x", config[0], config[1] );
 
@@ -292,65 +310,45 @@ struct slot_config** build_slot_configs (void)
 
   /* Set up each slot */
 
-  /* Slots 0 -7 should be used for keyed hashed applications */
-  *config[0] =  make_slot_config (0,     /* Slot for Encrypted Reads */
+  *config[0] =  make_ecc_key_slot_config ();
+
+  *config[1] =  make_ecc_key_slot_config ();
+
+  *config[2] =  make_ecc_key_slot_config ();
+
+  *config[3] =  make_ecc_key_slot_config ();
+
+  *config[4] =  make_ecc_key_slot_config ();
+
+  *config[5] =  make_ecc_key_slot_config ();
+
+  *config[6] =  make_ecc_key_slot_config ();
+
+  *config[7] =  make_ecc_key_slot_config ();
+
+  /* Slot 8 is the always writable data slot */
+  *config[8] =  make_slot_config (0,     /* External Signatures are Enabled */
                                   false, /* Check Only */
                                   false, /* Single Use */
                                   false, /* Encrypted Read */
-                                  true,  /* Is secret */
+                                  false,  /* Is secret */
                                   0,     /* Slot for encrypted writes*/
-                                  false, /* Derive Key */
-                                  NEVER);/* Write configuration */
+                                  false,  /* Derive Key also allows GenKy */
+                                  ALWAYS);/* Write configuration */
 
-  *config[1] =  make_slot_config (0, false, false, false,
-                                  true, 0, true, NEVER);
+  *config[9] =  make_ecc_key_slot_config ();
 
-  *config[2] =  make_slot_config (0, false, false, false,
-                                  true, 0, false, NEVER);
+  *config[10] =  make_ecc_key_slot_config ();
 
-  *config[3] =  make_slot_config (0, false, false, false,
-                                  true, 0, true, NEVER);
+  *config[11] =  make_ecc_key_slot_config ();
 
-  *config[4] =  make_slot_config (0, false, false, false,
-                                  true, 0, false, NEVER);
+  *config[12] =  make_ecc_key_slot_config ();
 
-  *config[5] =  make_slot_config (0, false, false, false,
-                                  true, 0, true, NEVER);
+  *config[13] =  make_ecc_key_slot_config ();
 
-  /* Slots 6 -7 are key slots, to which the user can write and change
-   *the key. */
-  *config[6] =  make_slot_config (0, false, false, false,
-                                  true, 6, false, ENCRYPT);
+  *config[14] =  make_ecc_key_slot_config ();
 
-  *config[7] =  make_slot_config (0, false, false, false,
-                                  true, 7, false, ENCRYPT);
-
-  /* Slots 8 - 11 Are reserved for password checking */
-  *config[8] =  make_slot_config (0, false, false, false,
-                                  true, 0, false, NEVER);
-
-  *config[9] =  make_slot_config (0, false, false, false,
-                                  true, 0, false, NEVER);
-
-  *config[10] =  make_slot_config (0, false, false, false,
-                                   true, 0, false, NEVER);
-
-  *config[11] =  make_slot_config (0, false, false, false,
-                                   true, 0, false, NEVER);
-
-  /* Slots 12 - 13 should be used for user storage */
-  *config[12] =  make_slot_config (0, false, false, false,
-                                   false, 0, false, ALWAYS);
-
-  *config[13] =  make_slot_config (0, false, false, false,
-                                   false, 0, false, ALWAYS);
-
-  /* Slots 14 and 15 are fixed test keys */
-  *config[14] =  make_slot_config (0, false, false, false,
-                                   false, 0, false, NEVER);
-
-  *config[15] =  make_slot_config (0, false, false, false,
-                                   false, 0, false, NEVER);
+  *config[15] =  make_ecc_key_slot_config ();
 
   return config;
 
@@ -374,6 +372,56 @@ void free_slot_configs (struct slot_config **slots)
   free (slots);
 }
 
+bool set_slot_locked_and_temp (int fd)
+{
+
+  uint8_t slot_locked[4] = { 0xFF, 0xFF, 0x00, 0x00};
+  uint8_t temp[4] = {0x00, 0x00, 0x00, 0x00};
+  uint8_t addr = 0x16;
+
+  uint32_t to_write = 0;
+
+  memcpy (&to_write, slot_locked, sizeof(slot_locked));
+
+  bool result = write4 (fd, CONFIG_ZONE, addr, to_write);
+  if (result)
+    {
+      memcpy (&to_write, temp, sizeof(temp));
+      result = write4 (fd, CONFIG_ZONE, addr + 1, to_write);
+    }
+
+  return result;
+
+}
+
+bool set_key_config (int fd)
+{
+  uint8_t key_config[32] = {0x33, 0x00, /* Slot 0, ECC Private Key */
+                            0x33, 0x00, /* Slot 1, ECC Private Key */
+                            0x33, 0x00, /* Slot 2, ECC Private Key */
+                            0x33, 0x00, /* Slot 3, ECC Private Key */
+                            0x33, 0x00, /* Slot 4, ECC Private Key */
+                            0x33, 0x00, /* Slot 5, ECC Private Key */
+                            0x33, 0x00, /* Slot 6, ECC Private Key */
+                            0x3C, 0x00, /* Slot 7, ECC Private Key */
+                            0x33, 0x00, /* Slot 8, User Data */
+                            0x33, 0x00, /* Slot 9, ECC Private Key */
+                            0x33, 0x00, /* Slot 10, ECC Private Key */
+                            0x33, 0x00, /* Slot 11, ECC Private Key */
+                            0x33, 0x00, /* Slot 12, ECC Private Key */
+                            0x33, 0x00, /* Slot 13, ECC Private Key */
+                            0x33, 0x00, /* Slot 14, ECC Private Key */
+                            0x33, 0x00 }; /* Slot 15, ECC Private Key */
+
+  uint8_t key_config_addr = 0x18;
+
+  struct octet_buffer to_write = { key_config, sizeof(key_config)};
+
+  return write32 (fd, CONFIG_ZONE, key_config_addr, to_write, NULL);
+
+}
+
+
 bool set_config_zone (int fd)
 {
   bool result = false;
@@ -390,7 +438,7 @@ bool set_config_zone (int fd)
   int x = 0;
 
   const uint8_t I2C_ADDR_OTP_MODE_SELECTOR_MODE [] =
-    { 0xC8, 0x00, 0xAA, 0x00 };
+    { 0xC0, 0x00, 0xAA, 0x00 };
   const uint8_t I2C_ADDR_ETC_WORD = 0x04;
 
   uint32_t to_send = 0;
@@ -406,6 +454,16 @@ bool set_config_zone (int fd)
     }
 
   free_slot_configs (configs);
+
+  /* Set the Slot Locked and Temperature offset */
+  if (result)
+    {
+      if ((result = set_slot_locked_and_temp (fd)))
+        {
+          CTX_LOG (DEBUG, "slot lock config passed");
+          result = set_key_config (fd);
+        }
+    }
 
   return result;
 

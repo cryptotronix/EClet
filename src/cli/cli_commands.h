@@ -256,5 +256,8 @@ struct encrypted_write
 struct encrypted_write cli_mac_write (int fd, struct octet_buffer data,
                                       unsigned int slot, const char *ascii_key);
 
+int cli_gen_key (int fd, struct arguments *args);
+int cli_ecc_sign (int fd, struct arguments *args);
+
 int cli_dev (int fd, struct arguments *args);
 #endif /* CLI_COMMANDS_H */

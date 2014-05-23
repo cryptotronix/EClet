@@ -28,6 +28,7 @@
 #include "../driver/personalize.h"
 // for dev only
 #include "../driver/command.h"
+#include <crypti2c/i2c.h>
 
 #if HAVE_GCRYPT_H
 #include "hash.h"
@@ -118,19 +119,12 @@ void init_cli (struct arguments *args)
   static const struct command state_cmd = {"state", cli_get_state };
   static const struct command config_cmd = {"get-config", cli_get_config_zone };
   static const struct command otp_cmd = {"get-otp", cli_get_otp_zone };
-  static const struct command hash_cmd = {CMD_HASH, cli_hash };
   static const struct command personalize_cmd = {"personalize",
                                                  cli_personalize };
-  static const struct command mac_cmd = {"mac", cli_mac };
-  static const struct command print_keys_cmd = {"print-keys", cli_print_keys };
-  static const struct command offline_verify_cmd =
-    {CMD_OFFLINE_VERIFY, cli_verify_mac };
-  static const struct command check_mac_cmd = {"check-mac", cli_check_mac };
-  static const struct command write_key_cmd = {"write", cli_write_to_key_slot };
-  static const struct command read_key_cmd = {"read", cli_read_key_slot };
   static const struct command nonce_cmd = {"nonce", cli_get_nonce };
   static const struct command dev_cmd = {"dev", cli_dev };
-
+  static const struct command gen_key = {"gen-key", cli_gen_key };
+  static const struct command ecc_sign_cmd = {"sign", cli_ecc_sign };
   int x = 0;
 
   x = add_command (random_cmd, x);
@@ -138,16 +132,11 @@ void init_cli (struct arguments *args)
   x = add_command (state_cmd, x);
   x = add_command (config_cmd, x);
   x = add_command (otp_cmd, x);
-  x = add_command (hash_cmd, x);
   x = add_command (personalize_cmd, x);
-  x = add_command (mac_cmd, x);
-  x = add_command (print_keys_cmd, x);
-  x = add_command (offline_verify_cmd, x);
-  x = add_command (check_mac_cmd, x);
-  x = add_command (write_key_cmd, x);
-  x = add_command (read_key_cmd, x);
   x = add_command (nonce_cmd, x);
   x = add_command (dev_cmd, x);
+  x = add_command (gen_key, x);
+  x = add_command (ecc_sign_cmd, x);
 
   set_defaults (args);
 
@@ -775,6 +764,28 @@ int cli_get_nonce (int fd, struct arguments *args)
 
 }
 
+int cli_gen_key (int fd, struct arguments *args)
+{
+  int result = HASHLET_COMMAND_FAIL;
+  assert (NULL != args);
+
+  struct octet_buffer pub_key = gen_ecc_key (fd, args->key_slot, true);
+
+  if (NULL != pub_key.ptr)
+    {
+      output_hex (stdout, pub_key);
+      free_octet_buffer (pub_key);
+      result = HASHLET_COMMAND_SUCCESS;
+    }
+  else
+    {
+      fprintf (stderr, "%s\n", "Gen key commandfailed");
+    }
+
+  return result;
+
+}
+
 int cli_dev (int fd, struct arguments *args)
 {
   int result = HASHLET_COMMAND_FAIL;
@@ -783,12 +794,101 @@ int cli_dev (int fd, struct arguments *args)
   bool config_locked = is_config_locked (fd);
   bool data_locked = is_data_locked (fd);
 
-  printf ("%s%d\n", "Config locked", config_locked);
-  printf ("%s%d\n", "Data locked", data_locked);
+  enum DEVICE_STATE state = get_device_state (fd);
+
+  printf ("%s %d\n", "Config locked", config_locked);
+  printf ("%s %d\n", "Data locked", data_locked);
+
+  struct octet_buffer pub_key = gen_ecc_key (fd, args->key_slot, true);
+
+  print_hex_string ("Pub key", pub_key.ptr, pub_key.len);
+
+  pub_key = gen_ecc_key (fd, args->key_slot, true);
+  print_hex_string ("Pub key", pub_key.ptr, pub_key.len);
+
+  /* if (set_config_zone (fd)) */
+  /*   { */
+  /*     printf ("Config zone set\n"); */
+  /*     if (lock_config_zone (fd, state)) */
+  /*       printf ("Locked"); */
+  /*   } */
+
+  /* struct octet_buffer otp_zone; */
+  /* if (set_otp_zone (fd, &otp_zone)) */
+  /*   { */
+  /*     if (lock (fd, DATA_ZONE, 0)) */
+  /*       { */
+  /*         state = STATE_PERSONALIZED; */
+  /*         assert (get_device_state (fd) == state); */
+
+  /*         pub_key = gen_ecc_key (fd, args->key_slot, true); */
+
+  /*         print_hex_string ("Pub key", pub_key.ptr, pub_key.len); */
+  /*       } */
+
+  /*   } */
 
   return result;
 
 
 
 
+}
+
+
+int cli_ecc_sign (int fd, struct arguments *args)
+{
+  int result = HASHLET_COMMAND_FAIL;
+  assert (NULL != args);
+
+  FILE *f = NULL;
+
+  if ((f = get_input_file (args)) != NULL)
+    {
+      /* Digest the file then proceed */
+      struct octet_buffer file_digest = {0,0};
+      file_digest = sha256 (f);
+      close_input_file (args, f);
+
+      print_hex_string ("SHA256 file digest", file_digest.ptr, file_digest.len);
+
+      if (NULL != file_digest.ptr)
+        {
+
+          /* struct octet_buffer blank_nonce = make_buffer (20); */
+          /* struct octet_buffer temp_nonce = gen_nonce (fd, */
+          /*                                             blank_nonce); */
+
+          struct octet_buffer r = get_random (fd, true);
+          r = get_random (fd, true);
+          r = get_random (fd, true);
+          r = get_random (fd, false);
+
+          if (load_nonce (fd, file_digest))
+            {
+
+              struct octet_buffer rsp = ecc_sign (fd, args->key_slot);
+
+              if (NULL != rsp.ptr)
+                {
+                  output_hex (stdout, rsp);
+                  free_octet_buffer (rsp);
+                  result = HASHLET_COMMAND_SUCCESS;
+                }
+              else
+                {
+                  fprintf (stderr, "%s\n", "Sign Command failed.");
+                }
+
+            }
+
+        }
+    }
+  else
+    {
+      /* temp_key_loaded already false */
+    }
+
+
+  return result;
 }
