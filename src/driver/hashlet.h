@@ -21,8 +21,7 @@
 #ifndef HASHLET_H
 #define HASHLET_H
 
-#include <crypti2c/util.h>
-#include <crypti2c/log.h>
+#include <libcrypti2c.h>
 #include "command.h"
 #include "personalize.h"
 
@@ -34,7 +33,8 @@
  *
  * @return An open file descriptor or -1 on error
  */
-int hashlet_setup(const char *bus, unsigned int addr);
+int
+hashlet_setup(const char *bus, unsigned int addr);
 
 /**
  * Sleeps the device and closes the file descriptor.
@@ -42,9 +42,11 @@ int hashlet_setup(const char *bus, unsigned int addr);
  * @param fd The open file descriptor
  *
  */
-void hashlet_teardown(int fd);
+void
+hashlet_teardown(int fd);
 
-void set_log_level(enum LOG_LEVEL lvl);
+void
+set_log_level(enum CI2C_LOG_LEVEL lvl);
 
 /* COMMANDS */
 
@@ -56,5 +58,6 @@ void set_log_level(enum LOG_LEVEL lvl);
  *
  * @return A malloc'ed buffer with random data.
  */
-struct octet_buffer get_random(int fd, bool update_seed);
+struct ci2c_octet_buffer
+get_random(int fd, bool update_seed);
 #endif

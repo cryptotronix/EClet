@@ -25,7 +25,7 @@ AC_PROG_CC
 AM_PROG_CC_C_O
 AC_CONFIG_FILES([Makefile doc/Makefile])
 PKG_PROG_PKG_CONFIG
-PKG_CHECK_MODULES([DEPS], [crypti2c-1.0])
+PKG_CHECK_MODULES([DEPS], [crypti2c-0.1])
 #Check for libs
 have_gcrypt=no
 have_crypti2c=no

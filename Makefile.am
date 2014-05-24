@@ -33,14 +33,9 @@ eclet_SOURCES = src/driver/command.h src/driver/command.c \
 		  src/driver/personalize.h src/driver/personalize.c \
 		  src/cli/hash.h src/cli/hash.c \
 		  src/cli/cli_commands.h src/cli/cli_commands.c \
-		  src/driver/config_zone.h src/driver/config_zone.c \
-		  src/parser/hashlet_bison.y src/parser/hashlet_flex.l \
-		  src/parser/hashlet_parser.h src/parser/hashlet_parser.c
-
-BUILT_SOURCES = src/parser/hashlet_bison.h
+		  src/driver/config_zone.h src/driver/config_zone.c
 
 eclet_CFLAGS = -Wall
-
 
 dist_noinst_SCRIPTS = autogen.sh
 

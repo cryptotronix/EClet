@@ -21,14 +21,11 @@
 
 #include "command.h"
 #include <assert.h>
-#include <crypti2c/crc.h>
 #include <stdio.h>
 #include <unistd.h>
 #include <stdlib.h>
 #include <string.h>
-#include <crypti2c/i2c.h>
-#include <crypti2c/command_adaptation.h>
-#include <crypti2c/log.h>
+#include <libcrypti2c.h>
 #include "config.h"
 #include "../cli/hash.h"
 
@@ -103,10 +100,10 @@ void print_command (struct Command_ATSHA204 *c)
 
   const char* opcode = NULL;
 
-  CTX_LOG (DEBUG, "*** Printing Command ***");
-  CTX_LOG (DEBUG, "Command: 0x%02X", c->command);
-  CTX_LOG (DEBUG, "Count: 0x%02X", c->count);
-  CTX_LOG (DEBUG, "OpCode: 0x%02X", c->opcode);
+  CI2C_LOG (DEBUG, "*** Printing Command ***");
+  CI2C_LOG (DEBUG, "Command: 0x%02X", c->command);
+  CI2C_LOG (DEBUG, "Count: 0x%02X", c->count);
+  CI2C_LOG (DEBUG, "OpCode: 0x%02X", c->opcode);
 
   switch (c->opcode)
     {
@@ -158,28 +155,30 @@ void print_command (struct Command_ATSHA204 *c)
     default:
       assert (false);
     }
-  CTX_LOG (DEBUG,"%s", opcode);
-  CTX_LOG (DEBUG,"param1: 0x%02X", c->param1);
-  CTX_LOG (DEBUG,"param2: 0x%02X 0x%02X", c->param2[0], c->param2[1]);
+  CI2C_LOG (DEBUG,"%s", opcode);
+  CI2C_LOG (DEBUG,"param1: 0x%02X", c->param1);
+  CI2C_LOG (DEBUG,"param2: 0x%02X 0x%02X", c->param2[0], c->param2[1]);
   if (c->data_len > 0)
-    print_hex_string ("Data", c->data, c->data_len);
-  CTX_LOG (DEBUG,"CRC: 0x%02X 0x%02X", c->checksum[0], c->checksum[1]);
-  CTX_LOG (DEBUG,"Wait time: %ld seconds %lu nanoseconds",
+    ci2c_print_hex_string ("Data", c->data, c->data_len);
+  CI2C_LOG (DEBUG,"CRC: 0x%02X 0x%02X", c->checksum[0], c->checksum[1]);
+  CI2C_LOG (DEBUG,"Wait time: %ld seconds %lu nanoseconds",
           c->exec_time.tv_sec, c->exec_time.tv_nsec);
 
 
 
 }
 
-enum STATUS_RESPONSE get_status_response(const uint8_t *rsp)
+enum CI2C_STATUS_RESPONSE
+get_status_response(const uint8_t *rsp)
 {
   const unsigned int OFFSET_TO_CRC = 2;
   const unsigned int OFFSET_TO_RSP = 1;
   const unsigned int STATUS_LENGTH = 4;
 
-  if (!is_crc_16_valid (rsp, STATUS_LENGTH - CRC_16_LEN, rsp + OFFSET_TO_CRC))
+  if (!ci2c_is_crc_16_valid (rsp, STATUS_LENGTH - CI2C_CRC_16_LEN,
+                             rsp + OFFSET_TO_CRC))
     {
-      CTX_LOG (DEBUG, "CRC Fail in status response");
+      CI2C_LOG (DEBUG, "CRC Fail in status response");
       return RSP_COMM_ERROR;
     }
 
@@ -188,14 +187,15 @@ enum STATUS_RESPONSE get_status_response(const uint8_t *rsp)
 }
 
 
-struct octet_buffer get_random (int fd, bool update_seed)
+struct ci2c_octet_buffer
+get_random (int fd, bool update_seed)
 {
   uint8_t *random = NULL;
   uint8_t param2[2] = {0};
   uint8_t param1 = update_seed ? 0 : 1;
-  struct octet_buffer buf = {};
+  struct ci2c_octet_buffer buf = {};
 
-  random = malloc_wipe (RANDOM_RSP_LENGTH);
+  random = ci2c_malloc_wipe (RANDOM_RSP_LENGTH);
 
   struct Command_ATSHA204 c = make_command ();
 
@@ -205,13 +205,13 @@ struct octet_buffer get_random (int fd, bool update_seed)
   set_data (&c, NULL, 0);
   set_execution_time (&c, 0, RANDOM_AVG_EXEC);
 
-  if (RSP_SUCCESS == process_command (fd, &c, random, RANDOM_RSP_LENGTH))
+  if (RSP_SUCCESS == ci2c_process_command (fd, &c, random, RANDOM_RSP_LENGTH))
     {
       buf.ptr = random;
       buf.len = RANDOM_RSP_LENGTH;
     }
   else
-    CTX_LOG (DEBUG, "Random command failed");
+    CI2C_LOG (DEBUG, "Random command failed");
 
   return buf;
 
@@ -263,7 +263,7 @@ bool read4 (int fd, enum DATA_ZONE zone, uint8_t addr, uint32_t *buf)
   set_execution_time (&c, 0, 1000000);
 
 
-  if (RSP_SUCCESS == process_command (fd, &c, (uint8_t *)buf, sizeof (uint32_t)))
+  if (RSP_SUCCESS == ci2c_process_command (fd, &c, (uint8_t *)buf, sizeof (uint32_t)))
     {
       result = true;
     }
@@ -271,7 +271,7 @@ bool read4 (int fd, enum DATA_ZONE zone, uint8_t addr, uint32_t *buf)
   return result;
 }
 
-struct octet_buffer read32 (int fd, enum DATA_ZONE zone, uint8_t addr)
+struct ci2c_octet_buffer read32 (int fd, enum DATA_ZONE zone, uint8_t addr)
 {
 
 
@@ -293,11 +293,11 @@ struct octet_buffer read32 (int fd, enum DATA_ZONE zone, uint8_t addr)
   set_execution_time (&c, 0, READ_AVG_EXEC);
 
   const unsigned int LENGTH_OF_RESPONSE = 32;
-  struct octet_buffer buf = make_buffer (LENGTH_OF_RESPONSE);
+  struct ci2c_octet_buffer buf = ci2c_make_buffer (LENGTH_OF_RESPONSE);
 
-  if (RSP_SUCCESS != process_command (fd, &c, buf.ptr, LENGTH_OF_RESPONSE))
+  if (RSP_SUCCESS != ci2c_process_command (fd, &c, buf.ptr, LENGTH_OF_RESPONSE))
     {
-      free_wipe (buf.ptr, LENGTH_OF_RESPONSE);
+      ci2c_free_wipe (buf.ptr, LENGTH_OF_RESPONSE);
       buf.ptr = NULL;
       buf.len = 0;
     }
@@ -325,7 +325,7 @@ bool write4 (int fd, enum DATA_ZONE zone, uint8_t addr, uint32_t buf)
   set_data (&c, (uint8_t *)&buf, sizeof (buf));
   set_execution_time (&c, 0, 4000000);
 
-  if (RSP_SUCCESS == process_command (fd, &c, &recv, sizeof (recv)))
+  if (RSP_SUCCESS == ci2c_process_command (fd, &c, &recv, sizeof (recv)))
   {
     if (0 == (int) recv)
       status = true;
@@ -338,7 +338,7 @@ bool write4 (int fd, enum DATA_ZONE zone, uint8_t addr, uint32_t buf)
 }
 
 bool write32 (int fd, enum DATA_ZONE zone, uint8_t addr,
-              struct octet_buffer buf, struct octet_buffer *mac)
+              struct ci2c_octet_buffer buf, struct ci2c_octet_buffer *mac)
 {
 
   assert (NULL != buf.ptr);
@@ -351,12 +351,12 @@ bool write32 (int fd, enum DATA_ZONE zone, uint8_t addr,
   uint8_t param2[2] = {0};
   uint8_t param1 = set_zone_bits (zone);
 
-  struct octet_buffer data = {0,0};
+  struct ci2c_octet_buffer data = {0,0};
 
   if (NULL != mac)
-    data = make_buffer (buf.len + mac->len);
+    data = ci2c_make_buffer (buf.len + mac->len);
   else
-    data = make_buffer (buf.len);
+    data = ci2c_make_buffer (buf.len);
 
   memcpy (data.ptr, buf.ptr, buf.len);
   if (NULL != mac && mac->len > 0)
@@ -378,14 +378,14 @@ bool write32 (int fd, enum DATA_ZONE zone, uint8_t addr,
 
   set_execution_time (&c, 0, WRITE_AVG_EXEC);
 
-  if (RSP_SUCCESS == process_command (fd, &c, &recv, sizeof (recv)))
+  if (RSP_SUCCESS == ci2c_process_command (fd, &c, &recv, sizeof (recv)))
   {
-    CTX_LOG (DEBUG, "Write 32 successful.");
+    CI2C_LOG (DEBUG, "Write 32 successful.");
     if (0 == (int) recv)
       status = true;
   }
 
-  free_octet_buffer (data);
+  ci2c_free_octet_buffer (data);
 
   return status;
 
@@ -448,7 +448,7 @@ uint8_t serialize_mac_mode (struct mac_mode_encoding m)
 
 struct mac_response perform_mac (int fd, struct mac_mode_encoding m,
                                  unsigned int data_slot,
-                                 struct octet_buffer challenge)
+                                 struct ci2c_octet_buffer challenge)
 {
   const unsigned int recv_len = 32;
   struct mac_response rsp = {0};
@@ -465,7 +465,7 @@ struct mac_response perform_mac (int fd, struct mac_mode_encoding m,
   param2[0] = data_slot;
   param2[1] = 0;
 
-  rsp.mac = make_buffer (recv_len);
+  rsp.mac = ci2c_make_buffer (recv_len);
 
   struct Command_ATSHA204 c = make_command ();
 
@@ -476,7 +476,7 @@ struct mac_response perform_mac (int fd, struct mac_mode_encoding m,
   set_data (&c, challenge.ptr, challenge.len);
   set_execution_time (&c, 0, MAC_AVG_EXEC);
 
-  if (RSP_SUCCESS == process_command (fd, &c, rsp.mac.ptr, recv_len))
+  if (RSP_SUCCESS == ci2c_process_command (fd, &c, rsp.mac.ptr, recv_len))
     {
       /* Perform a check mac to ensure we have the data correct */
       rsp.meta = get_check_mac_meta_data (fd, m, data_slot);
@@ -487,7 +487,7 @@ struct mac_response perform_mac (int fd, struct mac_mode_encoding m,
     }
   else
     {
-      free_octet_buffer (rsp.mac);
+      ci2c_free_octet_buffer (rsp.mac);
 
     }
 
@@ -497,11 +497,11 @@ struct mac_response perform_mac (int fd, struct mac_mode_encoding m,
 
 }
 
-struct octet_buffer get_check_mac_meta_data (int fd, struct mac_mode_encoding m,
+struct ci2c_octet_buffer get_check_mac_meta_data (int fd, struct mac_mode_encoding m,
                                              unsigned int data_slot)
 {
   const unsigned int DLEN = 13;
-  struct octet_buffer result = make_buffer (DLEN);
+  struct ci2c_octet_buffer result = ci2c_make_buffer (DLEN);
   uint8_t *p = result.ptr;
 
   *p++ = COMMAND_MAC;
@@ -509,21 +509,21 @@ struct octet_buffer get_check_mac_meta_data (int fd, struct mac_mode_encoding m,
   *p++ = data_slot;
   *p++ = 0;
 
-  struct octet_buffer otp_zone = get_otp_zone (fd);
-  struct octet_buffer serial = get_serial_num (fd);
+  struct ci2c_octet_buffer otp_zone = get_otp_zone (fd);
+  struct ci2c_octet_buffer serial = get_serial_num (fd);
 
   if (!m.use_serial_num)
     {
       unsigned int len = serial.len;
-      free_octet_buffer (serial);
-      serial = make_buffer (len);
+      ci2c_free_octet_buffer (serial);
+      serial = ci2c_make_buffer (len);
     }
 
   if (!m.use_otp_0_10)
     {
       unsigned int len = otp_zone.len;
-      free_octet_buffer (otp_zone);
-      otp_zone = make_buffer (len);
+      ci2c_free_octet_buffer (otp_zone);
+      otp_zone = ci2c_make_buffer (len);
     }
 
   const unsigned int OTP_8_10_LEN = 3;
@@ -540,20 +540,20 @@ struct octet_buffer get_check_mac_meta_data (int fd, struct mac_mode_encoding m,
     }
   else
     {
-      free_octet_buffer (result);
+      ci2c_free_octet_buffer (result);
       result.ptr = NULL;
     }
 
-  free_octet_buffer (otp_zone);
-  free_octet_buffer (serial);
+  ci2c_free_octet_buffer (otp_zone);
+  ci2c_free_octet_buffer (serial);
 
   return result;
 }
 bool check_mac (int fd, struct check_mac_encoding cm,
                 unsigned int data_slot,
-                struct octet_buffer challenge,
-                struct octet_buffer challenge_response,
-                struct octet_buffer other_data)
+                struct ci2c_octet_buffer challenge,
+                struct ci2c_octet_buffer challenge_response,
+                struct ci2c_octet_buffer other_data)
 
 {
   uint8_t response = 0;
@@ -573,8 +573,8 @@ bool check_mac (int fd, struct check_mac_encoding cm,
 
   const unsigned int DATA_LEN = CHALLENGE_SIZE * 2 + OTHER_DATA_SIZE;
 
-  struct octet_buffer data;
-  data = make_buffer(DATA_LEN);
+  struct ci2c_octet_buffer data;
+  data = ci2c_make_buffer(DATA_LEN);
 
   memcpy (data.ptr, challenge.ptr, CHALLENGE_SIZE);
   memcpy (data.ptr + CHALLENGE_SIZE, challenge_response.ptr, CHALLENGE_SIZE);
@@ -594,7 +594,7 @@ bool check_mac (int fd, struct check_mac_encoding cm,
   set_data (&c, data.ptr, data.len);
   set_execution_time (&c, 0, CHECK_MAC_AVG_EXEC);
 
-  if (RSP_SUCCESS == process_command (fd, &c, &response, sizeof(response)))
+  if (RSP_SUCCESS == ci2c_process_command (fd, &c, &response, sizeof(response)))
     {
       if (0 == response)
         result = true;
@@ -632,7 +632,7 @@ bool is_locked (int fd, enum DATA_ZONE zone)
 
     }
 
-  struct octet_buffer config_data = read32 (fd, CONFIG_ZONE, config_addr);
+  struct ci2c_octet_buffer config_data = read32 (fd, CONFIG_ZONE, config_addr);
 
   if (config_data.ptr != NULL)
     {
@@ -642,7 +642,7 @@ bool is_locked (int fd, enum DATA_ZONE zone)
       else
         result = true;
 
-      free_octet_buffer (config_data);
+      ci2c_free_octet_buffer (config_data);
     }
 
   return result;
@@ -659,12 +659,12 @@ bool is_data_locked (int fd)
 }
 
 
-struct octet_buffer get_config_zone (fd)
+struct ci2c_octet_buffer get_config_zone (fd)
 {
   const unsigned int SIZE_OF_CONFIG_ZONE = 128;
   const unsigned int NUM_OF_WORDS = SIZE_OF_CONFIG_ZONE / 4;
 
-  struct octet_buffer buf = make_buffer (SIZE_OF_CONFIG_ZONE);
+  struct ci2c_octet_buffer buf = ci2c_make_buffer (SIZE_OF_CONFIG_ZONE);
   uint8_t *write_loc = buf.ptr;
 
   unsigned int addr = 0;
@@ -680,15 +680,15 @@ struct octet_buffer get_config_zone (fd)
   return buf;
 }
 
-struct octet_buffer get_otp_zone (fd)
+struct ci2c_octet_buffer get_otp_zone (fd)
 {
     const unsigned int SIZE_OF_OTP_ZONE = 64;
     const unsigned int SIZE_OF_READ = 32;
     const unsigned int SIZE_OF_WORD = 4;
     const unsigned int SECOND_WORD = (SIZE_OF_READ / SIZE_OF_WORD);
 
-    struct octet_buffer buf = make_buffer (SIZE_OF_OTP_ZONE);
-    struct octet_buffer half;
+    struct ci2c_octet_buffer buf = ci2c_make_buffer (SIZE_OF_OTP_ZONE);
+    struct ci2c_octet_buffer half;
 
     int x = 0;
 
@@ -701,11 +701,11 @@ struct octet_buffer get_otp_zone (fd)
         if (NULL != half.ptr)
           {
             memcpy (buf.ptr + offset, half.ptr, SIZE_OF_READ);
-            free_octet_buffer (half);
+            ci2c_free_octet_buffer (half);
           }
         else
           {
-            free_octet_buffer (buf);
+            ci2c_free_octet_buffer (buf);
             buf.ptr = NULL;
             return buf;
           }
@@ -756,16 +756,16 @@ bool lock (int fd, enum DATA_ZONE zone, uint16_t crc)
   set_data (&c, NULL, 0);
   set_execution_time (&c, 0, LOCK_AVG_EXEC);
 
-  if (RSP_SUCCESS == process_command (fd, &c, &response, sizeof (response)))
+  if (RSP_SUCCESS == ci2c_process_command (fd, &c, &response, sizeof (response)))
     {
       if (0 == response)
         {
           result = true;
-          CTX_LOG (DEBUG, "Lock Successful");
+          CI2C_LOG (DEBUG, "Lock Successful");
         }
       else
         {
-          CTX_LOG (DEBUG, "Lock Failed");
+          CI2C_LOG (DEBUG, "Lock Failed");
         }
     }
 
@@ -791,7 +791,7 @@ bool is_otp_read_only_mode (int fd)
 }
 
 
-bool set_otp_zone (int fd, struct octet_buffer *otp_zone)
+bool set_otp_zone (int fd, struct ci2c_octet_buffer *otp_zone)
 {
 
   assert (NULL != otp_zone);
@@ -807,10 +807,10 @@ bool set_otp_zone (int fd, struct octet_buffer *otp_zone)
   uint8_t nulls[SIZE_OF_WRITE];
   uint8_t part1[SIZE_OF_WRITE];
   uint8_t part2[SIZE_OF_WRITE];
-  struct octet_buffer buf ={};
-  wipe (nulls, SIZE_OF_WRITE);
-  wipe (part1, SIZE_OF_WRITE);
-  wipe (part2, SIZE_OF_WRITE);
+  struct ci2c_octet_buffer buf ={};
+  ci2c_wipe (nulls, SIZE_OF_WRITE);
+  ci2c_wipe (part1, SIZE_OF_WRITE);
+  ci2c_wipe (part2, SIZE_OF_WRITE);
 
   /* Simple check to make sure PACKAGE_VERSION isn't too long */
   assert (strlen (PACKAGE_VERSION) < 10);
@@ -833,11 +833,11 @@ bool set_otp_zone (int fd, struct octet_buffer *otp_zone)
 
   /* Fill in the data */
   buf.ptr = part1;
-  CTX_LOG (DEBUG, "Writing: %s", buf.ptr);
+  CI2C_LOG (DEBUG, "Writing: %s", buf.ptr);
   if (success)
     success = write32 (fd, OTP_ZONE, 0, buf, NULL);
   buf.ptr = part2;
-  CTX_LOG (DEBUG, "Writing: %s", buf.ptr);
+  CI2C_LOG (DEBUG, "Writing: %s", buf.ptr);
   if (success)
     success = write32 (fd, OTP_ZONE, SIZE_OF_WRITE / sizeof (uint32_t),
                        buf, NULL);
@@ -847,7 +847,7 @@ bool set_otp_zone (int fd, struct octet_buffer *otp_zone)
   if (success)
     {
       otp_zone->len = SIZE_OF_WRITE * 2;
-      otp_zone->ptr = malloc_wipe (otp_zone->len);
+      otp_zone->ptr = ci2c_malloc_wipe (otp_zone->len);
       memcpy (otp_zone->ptr, part1, SIZE_OF_WRITE);
       memcpy (otp_zone->ptr + SIZE_OF_WRITE, part2, SIZE_OF_WRITE);
     }
@@ -855,11 +855,11 @@ bool set_otp_zone (int fd, struct octet_buffer *otp_zone)
 }
 
 
-struct octet_buffer get_serial_num (int fd)
+struct ci2c_octet_buffer get_serial_num (int fd)
 {
-  struct octet_buffer serial;
+  struct ci2c_octet_buffer serial;
   const unsigned int len = sizeof (uint32_t) * 2 + 1;
-  serial.ptr = malloc_wipe (len);
+  serial.ptr = ci2c_malloc_wipe (len);
   serial.len = len;
 
   uint32_t word = 0;
@@ -933,7 +933,7 @@ uint8_t slot_to_addr (enum DATA_ZONE zone, uint8_t slot)
 
 }
 
-struct octet_buffer gen_nonce (int fd, struct octet_buffer data)
+struct ci2c_octet_buffer gen_nonce (int fd, struct ci2c_octet_buffer data)
 {
   const unsigned int EXTERNAL_INPUT_LEN = 32;
   const unsigned int NEW_NONCE_LEN = 20;
@@ -961,7 +961,7 @@ struct octet_buffer gen_nonce (int fd, struct octet_buffer data)
       rsp_len = RSP_LENGTH;
     }
 
-  struct octet_buffer buf = make_buffer (rsp_len);
+  struct ci2c_octet_buffer buf = ci2c_make_buffer (rsp_len);
 
   struct Command_ATSHA204 c = make_command ();
 
@@ -971,10 +971,10 @@ struct octet_buffer gen_nonce (int fd, struct octet_buffer data)
   set_data (&c, data.ptr, data.len);
   set_execution_time (&c, 0, NONCE_AVG_EXEC);
 
-  if (RSP_SUCCESS != process_command (fd, &c, buf.ptr, buf.len))
+  if (RSP_SUCCESS != ci2c_process_command (fd, &c, buf.ptr, buf.len))
     {
-      CTX_LOG (DEBUG, "Nonce command failed");
-      free_octet_buffer (buf);
+      CI2C_LOG (DEBUG, "Nonce command failed");
+      ci2c_free_octet_buffer (buf);
       buf.ptr = NULL;
     }
 
@@ -984,10 +984,10 @@ struct octet_buffer gen_nonce (int fd, struct octet_buffer data)
 
 }
 
-struct octet_buffer get_nonce (int fd)
+struct ci2c_octet_buffer get_nonce (int fd)
 {
-  struct octet_buffer otp;
-  struct octet_buffer nonce = {0, 0};
+  struct ci2c_octet_buffer otp;
+  struct ci2c_octet_buffer nonce = {0, 0};
   const unsigned int MIX_DATA_LEN = 20;
 
   otp = get_otp_zone (fd);
@@ -1001,17 +1001,17 @@ struct octet_buffer get_nonce (int fd)
 
     }
 
-  free_octet_buffer (otp);
+  ci2c_free_octet_buffer (otp);
 
   return nonce;
 }
 
 
-bool load_nonce (int fd, struct octet_buffer data)
+bool load_nonce (int fd, struct ci2c_octet_buffer data)
 {
   assert (data.ptr != NULL && data.len == 32);
 
-  struct octet_buffer rsp = gen_nonce (fd, data);
+  struct ci2c_octet_buffer rsp = gen_nonce (fd, data);
 
   if (NULL == rsp.ptr || *rsp.ptr != 0)
     return false;
@@ -1020,12 +1020,12 @@ bool load_nonce (int fd, struct octet_buffer data)
 
 }
 
-struct octet_buffer gen_temp_key_from_nonce (int fd, struct octet_buffer random,
-                                             const struct octet_buffer otp)
+struct ci2c_octet_buffer gen_temp_key_from_nonce (int fd, struct ci2c_octet_buffer random,
+                                             const struct ci2c_octet_buffer otp)
 {
   assert (NULL != random.ptr && 32 == random.len);
 
-  struct octet_buffer result = {0,0};
+  struct ci2c_octet_buffer result = {0,0};
 
   const unsigned int MIX_DATA_LEN = 20;
   const uint8_t OPCODE = 0x16;
@@ -1038,13 +1038,14 @@ struct octet_buffer gen_temp_key_from_nonce (int fd, struct octet_buffer random,
 
   if (otp.len > MIX_DATA_LEN && otp.ptr != NULL)
     {
-      struct octet_buffer data_to_hash = make_buffer (data_len);
+      struct ci2c_octet_buffer data_to_hash = ci2c_make_buffer (data_len);
 
       unsigned int offset = 0;
 
-      offset = copy_buffer (data_to_hash, offset, random);
+      offset = ci2c_copy_buffer (data_to_hash, offset, random);
 
-      offset = copy_to_buffer (data_to_hash, offset, otp.ptr, MIX_DATA_LEN);
+      offset = ci2c_copy_to_buffer (data_to_hash, offset,
+                                    otp.ptr, MIX_DATA_LEN);
 
       data_to_hash.ptr[offset] = OPCODE;
       offset += 1;
@@ -1058,13 +1059,13 @@ struct octet_buffer gen_temp_key_from_nonce (int fd, struct octet_buffer random,
       assert (offset == data_len);
 
 
-      print_hex_string ("Nonce data to hash", data_to_hash.ptr,
+      ci2c_print_hex_string ("Nonce data to hash", data_to_hash.ptr,
                         data_to_hash.len);
 
 
       result = sha256_buffer (data_to_hash);
 
-      print_hex_string ("Nonce temp key", result.ptr,
+      ci2c_print_hex_string ("Nonce temp key", result.ptr,
                         result.len);
     }
 
@@ -1072,16 +1073,16 @@ struct octet_buffer gen_temp_key_from_nonce (int fd, struct octet_buffer random,
 
 }
 
-struct octet_buffer gen_temp_key_from_digest (int fd,
-                                              struct octet_buffer prev_temp_key,
+struct ci2c_octet_buffer gen_temp_key_from_digest (int fd,
+                                              struct ci2c_octet_buffer prev_temp_key,
                                               unsigned int slot,
-                                              struct octet_buffer key)
+                                              struct ci2c_octet_buffer key)
 {
   assert (NULL != prev_temp_key.ptr && 32 == prev_temp_key.len);
   assert (NULL != key.ptr && 32 == key.len);
   assert (slot <= 15);
 
-  struct octet_buffer result = {0,0};
+  struct ci2c_octet_buffer result = {0,0};
 
   const uint8_t OPCODE = COMMAND_GEN_DIG;
   const uint8_t PARAM1 = 0x02;
@@ -1097,11 +1098,11 @@ struct octet_buffer gen_temp_key_from_digest (int fd,
     sizeof (PARAM2) + sizeof (sn8) + sizeof (sn0) + sizeof (sn1) + ZERO_25 +
     prev_temp_key.len;
 
-  struct octet_buffer data_to_hash = make_buffer (len);
+  struct ci2c_octet_buffer data_to_hash = ci2c_make_buffer (len);
 
   unsigned int offset = 0;
 
-  offset = copy_buffer (data_to_hash, offset, key);
+  offset = ci2c_copy_buffer (data_to_hash, offset, key);
 
   data_to_hash.ptr[offset] = OPCODE;
   offset += 1;
@@ -1109,7 +1110,7 @@ struct octet_buffer gen_temp_key_from_digest (int fd,
   data_to_hash.ptr[offset] = PARAM1;
   offset += 1;
 
-  offset = copy_to_buffer (data_to_hash, offset, PARAM2, 2);
+  offset = ci2c_copy_to_buffer (data_to_hash, offset, PARAM2, 2);
 
   data_to_hash.ptr[offset] = sn8;
   offset += 1;
@@ -1120,21 +1121,21 @@ struct octet_buffer gen_temp_key_from_digest (int fd,
   data_to_hash.ptr[offset] = sn1;
   offset += 1;
 
-  struct octet_buffer zeros = make_buffer (ZERO_25);
+  struct ci2c_octet_buffer zeros = ci2c_make_buffer (ZERO_25);
 
-  offset = copy_buffer (data_to_hash, offset, zeros);
+  offset = ci2c_copy_buffer (data_to_hash, offset, zeros);
 
-  offset = copy_buffer (data_to_hash, offset, prev_temp_key);
+  offset = ci2c_copy_buffer (data_to_hash, offset, prev_temp_key);
 
   assert (offset == len);
 
-  print_hex_string ("Temp Key data to hash", data_to_hash.ptr, data_to_hash.len);
+  ci2c_print_hex_string ("Temp Key data to hash", data_to_hash.ptr, data_to_hash.len);
 
   result = sha256_buffer (data_to_hash);
 
-  print_hex_string ("Temp Key", result.ptr, result.len);
+  ci2c_print_hex_string ("Temp Key", result.ptr, result.len);
 
-  free_octet_buffer (zeros);
+  ci2c_free_octet_buffer (zeros);
 
   return result;
 
@@ -1144,10 +1145,10 @@ struct octet_buffer gen_temp_key_from_digest (int fd,
 
 }
 
-struct octet_buffer mac_write (const struct octet_buffer temp_key,
+struct ci2c_octet_buffer mac_write (const struct ci2c_octet_buffer temp_key,
                                uint8_t opcode,
                                uint8_t param1, const uint8_t *param2,
-                               const struct octet_buffer data)
+                               const struct ci2c_octet_buffer data)
 {
 
   assert (NULL != param2);
@@ -1162,11 +1163,11 @@ struct octet_buffer mac_write (const struct octet_buffer temp_key,
   unsigned int len = temp_key.len + sizeof (opcode) + sizeof (param1) + 2 +
     sizeof (sn8) + sizeof (sn0) + sizeof (sn1) + ZERO_25 + data.len;
 
-  struct octet_buffer data_to_hash = make_buffer (len);
+  struct ci2c_octet_buffer data_to_hash = ci2c_make_buffer (len);
 
   unsigned int offset = 0;
 
-  offset = copy_buffer (data_to_hash, offset, temp_key);
+  offset = ci2c_copy_buffer (data_to_hash, offset, temp_key);
 
   data_to_hash.ptr[offset] = opcode;
   offset += 1;
@@ -1174,7 +1175,7 @@ struct octet_buffer mac_write (const struct octet_buffer temp_key,
   data_to_hash.ptr[offset] = param1;
   offset += 1;
 
-  offset = copy_to_buffer (data_to_hash, offset, param2, 2);
+  offset = ci2c_copy_to_buffer (data_to_hash, offset, param2, 2);
 
   data_to_hash.ptr[offset] = sn8;
   offset += 1;
@@ -1185,22 +1186,22 @@ struct octet_buffer mac_write (const struct octet_buffer temp_key,
   data_to_hash.ptr[offset] = sn1;
   offset += 1;
 
-  struct octet_buffer zeros = make_buffer (ZERO_25);
+  struct ci2c_octet_buffer zeros = ci2c_make_buffer (ZERO_25);
 
-  offset = copy_buffer (data_to_hash, offset, zeros);
+  offset = ci2c_copy_buffer (data_to_hash, offset, zeros);
 
-  offset = copy_buffer (data_to_hash, offset, data);
+  offset = ci2c_copy_buffer (data_to_hash, offset, data);
 
   assert (offset == len);
 
-  print_hex_string ("Write mac data to hash", data_to_hash.ptr,
+  ci2c_print_hex_string ("Write mac data to hash", data_to_hash.ptr,
                     data_to_hash.len);
 
-  struct octet_buffer mac = sha256_buffer (data_to_hash);
+  struct ci2c_octet_buffer mac = sha256_buffer (data_to_hash);
 
-  free_octet_buffer (zeros);
+  ci2c_free_octet_buffer (zeros);
 
-  print_hex_string ("Mac'd write", mac.ptr, mac.len);
+  ci2c_print_hex_string ("Mac'd write", mac.ptr, mac.len);
 
   return mac;
 
@@ -1247,7 +1248,7 @@ bool gen_digest (int fd, enum DATA_ZONE zone, unsigned int slot)
   set_data (&c, NULL, 0);
   set_execution_time (&c, 0, GEN_DIG_AVG_EXEC);
 
-  if (RSP_SUCCESS == process_command (fd, &c, &rsp, sizeof (rsp)))
+  if (RSP_SUCCESS == ci2c_process_command (fd, &c, &rsp, sizeof (rsp)))
     {
       result = true;
     }
@@ -1259,7 +1260,7 @@ bool gen_digest (int fd, enum DATA_ZONE zone, unsigned int slot)
 
 }
 
-struct octet_buffer gen_ecc_key (int fd, uint8_t key_id, bool private)
+struct ci2c_octet_buffer gen_ecc_key (int fd, uint8_t key_id, bool private)
 {
 
   assert (key_id <= 15);
@@ -1278,7 +1279,7 @@ struct octet_buffer gen_ecc_key (int fd, uint8_t key_id, bool private)
       param1 = 0x00; /* Gen public key from private key in the slot */
     }
 
-  struct octet_buffer pub_key = make_buffer (64);
+  struct ci2c_octet_buffer pub_key = ci2c_make_buffer (64);
 
   struct Command_ATSHA204 c = make_command ();
 
@@ -1288,14 +1289,14 @@ struct octet_buffer gen_ecc_key (int fd, uint8_t key_id, bool private)
   set_data (&c, NULL, 0);
   set_execution_time (&c, 0, GEN_KEY_AVG_EXEC);
 
-  if (RSP_SUCCESS == process_command (fd, &c, pub_key.ptr, pub_key.len))
+  if (RSP_SUCCESS == ci2c_process_command (fd, &c, pub_key.ptr, pub_key.len))
     {
-      CTX_LOG (DEBUG, "Gen key success");
+      CI2C_LOG (DEBUG, "Gen key success");
     }
   else
     {
-      CTX_LOG (DEBUG, "Gen key failure");
-      free_octet_buffer (pub_key);
+      CI2C_LOG (DEBUG, "Gen key failure");
+      ci2c_free_octet_buffer (pub_key);
       pub_key.ptr = NULL;
     }
 
@@ -1307,7 +1308,7 @@ struct octet_buffer gen_ecc_key (int fd, uint8_t key_id, bool private)
 }
 
 
-struct octet_buffer ecc_sign (int fd, uint8_t key_id)
+struct ci2c_octet_buffer ecc_sign (int fd, uint8_t key_id)
 {
 
   assert (key_id <= 15);
@@ -1317,7 +1318,7 @@ struct octet_buffer ecc_sign (int fd, uint8_t key_id)
 
   param2[0] = key_id;
 
-  struct octet_buffer signature = make_buffer (64);
+  struct ci2c_octet_buffer signature = ci2c_make_buffer (64);
 
   struct Command_ATSHA204 c = make_command ();
 
@@ -1327,14 +1328,14 @@ struct octet_buffer ecc_sign (int fd, uint8_t key_id)
   set_data (&c, NULL, 0);
   set_execution_time (&c, 0, ECC_SIGN_MAX_EXEC);
 
-  if (RSP_SUCCESS == process_command (fd, &c, signature.ptr, signature.len))
+  if (RSP_SUCCESS == ci2c_process_command (fd, &c, signature.ptr, signature.len))
     {
-      CTX_LOG (DEBUG, "Sign success");
+      CI2C_LOG (DEBUG, "Sign success");
     }
   else
     {
-      CTX_LOG (DEBUG, "Sign failure");
-      free_octet_buffer (signature);
+      CI2C_LOG (DEBUG, "Sign failure");
+      ci2c_free_octet_buffer (signature);
       signature.ptr = NULL;
     }
 

@@ -133,10 +133,10 @@ parse_opt (int key, char *arg, struct argp_state *state)
       if (0 != address_arg)
         {
           arguments->address = address_arg;
-          CTX_LOG (DEBUG, "Using address %u", address_arg);
+          CI2C_LOG (DEBUG, "Using address %u", address_arg);
         }
       else
-        CTX_LOG (INFO, "Address not recognized, using default");
+        CI2C_LOG (INFO, "Address not recognized, using default");
     case 'b':
       arguments->bus = arg;
       break;
@@ -145,7 +145,7 @@ parse_opt (int key, char *arg, struct argp_state *state)
       break;
     case 'v':
       arguments->verbose = 1;
-      set_log_level (DEBUG);
+      ci2c_set_log_level (DEBUG);
       break;
     case 'f':
       arguments->input_file = arg;

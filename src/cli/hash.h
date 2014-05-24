@@ -22,7 +22,7 @@
 #define HASH_H
 
 #include <stdio.h>
-#include <crypti2c/util.h>
+#include <libcrypti2c.h>
 
 /**
  * Perform a SHA256 Digest on a file stream
@@ -32,7 +32,8 @@
  * @return A malloc'd buffer of 32 bytes containing the digest.
  * buf.ptr will be null on error
  */
-struct octet_buffer sha256 (FILE *fp);
+struct ci2c_octet_buffer
+sha256 (FILE *fp);
 
 /**
  * Perform a SHA 256 on a fixed data block
@@ -41,7 +42,8 @@ struct octet_buffer sha256 (FILE *fp);
  *
  * @return The digest
  */
-struct octet_buffer sha256_buffer (struct octet_buffer data);
+struct ci2c_octet_buffer
+sha256_buffer (struct ci2c_octet_buffer data);
 
 /**
  * Performs an offline verification of a MAC using the default settings.
@@ -53,7 +55,9 @@ struct octet_buffer sha256_buffer (struct octet_buffer data);
  *
  * @return True if matched, otherwise false
  */
-bool verify_hash_defaults (struct octet_buffer challenge,
-                           struct octet_buffer challenge_rsp,
-                           struct octet_buffer key, unsigned int key_slot);
+bool
+verify_hash_defaults (struct ci2c_octet_buffer challenge,
+                      struct ci2c_octet_buffer challenge_rsp,
+                      struct ci2c_octet_buffer key,
+                      unsigned int key_slot);
 #endif /* HASH_H */

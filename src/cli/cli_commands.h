@@ -61,7 +61,7 @@ struct command
   int (*func)(int, struct arguments *);
 };
 
-void output_hex (FILE *stream, struct octet_buffer buf);
+void output_hex (FILE *stream, struct ci2c_octet_buffer buf);
 
 /**
  * Sets reasonable defaults for arguments
@@ -238,8 +238,8 @@ int cli_read_key_slot (int fd, struct arguments *args);
 
 struct encrypted_write
 {
-  struct octet_buffer mac;
-  struct octet_buffer encrypted;
+  struct ci2c_octet_buffer mac;
+  struct ci2c_octet_buffer encrypted;
 };
 
 /**
@@ -253,7 +253,7 @@ struct encrypted_write
  * @return The malloc'd encrypted write structure containing both the
  * mac and the encrypted data.
  */
-struct encrypted_write cli_mac_write (int fd, struct octet_buffer data,
+struct encrypted_write cli_mac_write (int fd, struct ci2c_octet_buffer data,
                                       unsigned int slot, const char *ascii_key);
 
 int cli_gen_key (int fd, struct arguments *args);

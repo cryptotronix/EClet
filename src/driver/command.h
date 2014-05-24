@@ -34,9 +34,7 @@
 #include <stdbool.h>
 #include <stdint.h>
 #include "defs.h"
-#include <crypti2c/util.h>
-#include <crypti2c/command_adaptation.h>
-
+#include <libcrypti2c.h>
 
 enum DATA_ZONE
   {
@@ -47,7 +45,8 @@ enum DATA_ZONE
   };
 
 
-enum STATUS_RESPONSE get_status_response (const uint8_t *rsp);
+enum CI2C_STATUS_RESPONSE
+get_status_response (const uint8_t *rsp);
 
 /* Random Commands */
 
@@ -59,7 +58,8 @@ enum STATUS_RESPONSE get_status_response (const uint8_t *rsp);
  *
  * @return A malloc'ed buffer with random data.
  */
-struct octet_buffer get_random (int fd, bool update_seed);
+struct ci2c_octet_buffer
+get_random (int fd, bool update_seed);
 
 /**
  * Read four bytes from the device.
@@ -73,7 +73,8 @@ struct octet_buffer get_random (int fd, bool update_seed);
  *
  * @return True if successful other false and buf should not be investigated.
  */
-bool read4 (int fd, enum DATA_ZONE zone, uint8_t addr, uint32_t *buf);
+bool
+read4 (int fd, enum DATA_ZONE zone, uint8_t addr, uint32_t *buf);
 
 /**
  * Write four bytes to the device
@@ -86,7 +87,8 @@ bool read4 (int fd, enum DATA_ZONE zone, uint8_t addr, uint32_t *buf);
  *
  * @return True if successful.
  */
-bool write4 (int fd, enum DATA_ZONE zone, uint8_t addr, uint32_t buf);
+bool
+write4 (int fd, enum DATA_ZONE zone, uint8_t addr, uint32_t buf);
 
 /**
  * Write 32 bytes to the device.
@@ -100,8 +102,9 @@ bool write4 (int fd, enum DATA_ZONE zone, uint8_t addr, uint32_t buf);
  *
  * @return True if successful.
  */
-bool write32 (int fd, enum DATA_ZONE zone, uint8_t addr,
-              struct octet_buffer buf, struct octet_buffer *mac);
+bool
+write32 (int fd, enum DATA_ZONE zone, uint8_t addr,
+         struct ci2c_octet_buffer buf, struct ci2c_octet_buffer *mac);
 
 /**
  * Performs the nonce operation on the device.  Depending on the data
@@ -116,7 +119,8 @@ bool write32 (int fd, enum DATA_ZONE zone, uint8_t addr,
  * @return If data is 32 bytes, it will return a buffer of size 1 with
  * a single 0 byte.  Otherwise, it returns a 32 byte random number.
  */
-struct octet_buffer gen_nonce (int fd, struct octet_buffer data);
+struct ci2c_octet_buffer
+gen_nonce (int fd, struct ci2c_octet_buffer data);
 
 /**
  * Generates a new nonce from the device.  This will combine the OTP
@@ -126,7 +130,8 @@ struct octet_buffer gen_nonce (int fd, struct octet_buffer data);
  *
  * @return A 32 byte malloc'd buffer if successful.
  */
-struct octet_buffer get_nonce (int fd);
+struct ci2c_octet_buffer
+get_nonce (int fd);
 
 /**
  * Set the configuration zone based.  This function will setup the
@@ -136,7 +141,8 @@ struct octet_buffer get_nonce (int fd);
  *
  * @return True if succesful, otherwise false
  */
-bool set_config_zone (int fd);
+bool
+set_config_zone (int fd);
 
 /**
  * Programs the OTP zone with fixed data
@@ -147,7 +153,8 @@ bool set_config_zone (int fd);
  *
  * @return True if the OTP zone has been written.
  */
-bool set_otp_zone (int fd, struct octet_buffer *otp_zone);
+bool
+set_otp_zone (int fd, struct ci2c_octet_buffer *otp_zone);
 /**
  * Structure to encode options for the MAC command.
  *
@@ -201,7 +208,8 @@ struct check_mac_encoding
  *
  * @return The encoded value
  */
-uint8_t serialize_check_mac_mode (struct check_mac_encoding c);
+uint8_t
+serialize_check_mac_mode (struct check_mac_encoding c);
 
 /**
  * Encode the MAC commands mode options.
@@ -210,13 +218,14 @@ uint8_t serialize_check_mac_mode (struct check_mac_encoding c);
  *
  * @return A byte that contains the encoded MAC command mode encodings.
  */
-uint8_t serialize_mac_mode (struct mac_mode_encoding m);
+uint8_t
+serialize_mac_mode (struct mac_mode_encoding m);
 
 struct mac_response
 {
   bool status;                  /**< The status of the mac response */
-  struct octet_buffer mac;      /**< The 32 byte MAC response */
-  struct octet_buffer meta;     /**< The 13 byte meta data, needed
+  struct ci2c_octet_buffer mac;      /**< The 32 byte MAC response */
+  struct ci2c_octet_buffer meta;     /**< The 13 byte meta data, needed
                                    for check mac commands */
 };
 
@@ -232,9 +241,10 @@ struct mac_response
  * @return If the Mac_response status is true, ti returns malloc'd
  * buffers of the mac and meta data.
  */
-struct mac_response perform_mac (int fd, struct mac_mode_encoding m,
-                                 unsigned int data_slot,
-                                 struct octet_buffer challenge);
+struct
+mac_response perform_mac (int fd, struct mac_mode_encoding m,
+                          unsigned int data_slot,
+                          struct ci2c_octet_buffer challenge);
 
 /**
  *
@@ -243,7 +253,8 @@ struct mac_response perform_mac (int fd, struct mac_mode_encoding m,
  *
  * @return True if the configuration zone is locked
  */
-bool is_config_locked (int fd);
+bool
+is_config_locked (int fd);
 
 /**
  *
@@ -252,7 +263,8 @@ bool is_config_locked (int fd);
  *
  * @return True if the data zone is locked
  */
-bool is_data_locked (int fd);
+bool
+is_data_locked (int fd);
 
 /**
  * Returns the entire configuration zone.
@@ -262,7 +274,8 @@ bool is_data_locked (int fd);
  * @return A malloc'ed buffer containing the entire configuration
  * zone.
  */
-struct octet_buffer get_config_zone (int fd);
+struct ci2c_octet_buffer
+get_config_zone (int fd);
 
 /**
  * Returns the entire OTP zone.
@@ -271,7 +284,8 @@ struct octet_buffer get_config_zone (int fd);
  *
  * @return A malloc'ed buffer containing the entire OTP zone.
  */
-struct octet_buffer get_otp_zone (int fd);
+struct ci2c_octet_buffer
+get_otp_zone (int fd);
 
 /**
  * Locks the specified zone.
@@ -283,14 +297,16 @@ struct octet_buffer get_otp_zone (int fd);
  *
  * @return True if now locked.
  */
-bool lock (int fd, enum DATA_ZONE zone, uint16_t crc);
+bool
+lock (int fd, enum DATA_ZONE zone, uint16_t crc);
 
 /**
  * Print the command structure to the debug log source.
  *
  * @param c The command to be sent.
  */
-void print_command (struct Command_ATSHA204 *c);
+void
+print_command (struct Command_ATSHA204 *c);
 
 /**
  * Retrieve the device's serial number
@@ -299,7 +315,8 @@ void print_command (struct Command_ATSHA204 *c);
  *
  * @return a malloc'd buffer with the serial number.
  */
-struct octet_buffer get_serial_num (int fd);
+struct ci2c_octet_buffer
+get_serial_num (int fd);
 
 /**
  * Reads 32 Bytes from the address
@@ -310,7 +327,8 @@ struct octet_buffer get_serial_num (int fd);
  *
  * @return 32 bytes of data or buf.ptr will be null on an error
  */
-struct octet_buffer read32 (int fd, enum DATA_ZONE zone, uint8_t addr);
+struct ci2c_octet_buffer
+read32 (int fd, enum DATA_ZONE zone, uint8_t addr);
 
 
 enum DEVICE_STATE
@@ -330,7 +348,8 @@ enum DEVICE_STATE
  *
  * @return The devie state
  */
-enum DEVICE_STATE get_device_state (int fd);
+enum DEVICE_STATE
+get_device_state (int fd);
 
 /**
  * Generates the "other data" as its known in the data sheet that is
@@ -342,8 +361,9 @@ enum DEVICE_STATE get_device_state (int fd);
  *
  * @return the serialized, malloc'd, meta data.  Buf.ptr will be null on error.
  */
-struct octet_buffer get_check_mac_meta_data (int fd, struct mac_mode_encoding m,
-                                             unsigned int data_slot);
+struct ci2c_octet_buffer
+get_check_mac_meta_data (int fd, struct mac_mode_encoding m,
+                         unsigned int data_slot);
 
 /**
  * Performs the check mac operation
@@ -357,11 +377,12 @@ struct octet_buffer get_check_mac_meta_data (int fd, struct mac_mode_encoding m,
  *
  * @return True if a match, otherwise false
  */
-bool check_mac (int fd, struct check_mac_encoding cm,
-                unsigned int data_slot,
-                struct octet_buffer challenge,
-                struct octet_buffer challenge_response,
-                struct octet_buffer other_data);
+bool
+check_mac (int fd, struct check_mac_encoding cm,
+           unsigned int data_slot,
+           struct ci2c_octet_buffer challenge,
+           struct ci2c_octet_buffer challenge_response,
+           struct ci2c_octet_buffer other_data);
 
 /**
  * Converts the slot number to the correct address byte
@@ -371,7 +392,8 @@ bool check_mac (int fd, struct check_mac_encoding cm,
  *
  * @return The formatted byte, it will assert a failure if not correct.
  */
-uint8_t slot_to_addr (enum DATA_ZONE zone, uint8_t slot);
+uint8_t
+slot_to_addr (enum DATA_ZONE zone, uint8_t slot);
 
 /**
  * Calculate the temp key register from the random number produced by
@@ -383,9 +405,10 @@ uint8_t slot_to_addr (enum DATA_ZONE zone, uint8_t slot);
  *
  * @return A 32 byte digest matching temp_key or a empty octet buffer.
  */
-struct octet_buffer gen_temp_key_from_nonce (int fd,
-                                             const struct octet_buffer random,
-                                             const struct octet_buffer otp);
+struct ci2c_octet_buffer
+gen_temp_key_from_nonce (int fd,
+                         const struct ci2c_octet_buffer random,
+                         const struct ci2c_octet_buffer otp);
 
 /**
  * Calculates the mac needed for a key slot write.
@@ -398,10 +421,11 @@ struct octet_buffer gen_temp_key_from_nonce (int fd,
  *
  * @return the mac over the above data
  */
-struct octet_buffer mac_write (const struct octet_buffer temp_key,
-                               uint8_t opcode,
-                               uint8_t param1, const uint8_t *param2,
-                               const struct octet_buffer data);
+struct ci2c_octet_buffer
+mac_write (const struct ci2c_octet_buffer temp_key,
+           uint8_t opcode,
+           uint8_t param1, const uint8_t *param2,
+           const struct ci2c_octet_buffer data);
 
 /**
  * Generates an internal digest in the chip, into temp key.  Temp key
@@ -416,7 +440,8 @@ struct octet_buffer mac_write (const struct octet_buffer temp_key,
  *
  * @return true if the digest is set in temp_key
  */
-bool gen_digest (int fd, enum DATA_ZONE zone, unsigned int slot);
+bool
+gen_digest (int fd, enum DATA_ZONE zone, unsigned int slot);
 
 /**
  * Calculates the value of temp key from the gendig command.
@@ -429,15 +454,19 @@ bool gen_digest (int fd, enum DATA_ZONE zone, unsigned int slot);
  *
  * @return the calculated value of temp key
  */
-struct octet_buffer gen_temp_key_from_digest (int fd,
-                                              const struct octet_buffer prev_temp_key,
-                                              unsigned int slot,
-                                              const struct octet_buffer key);
+struct ci2c_octet_buffer
+gen_temp_key_from_digest (int fd,
+                          const struct ci2c_octet_buffer prev_temp_key,
+                          unsigned int slot,
+                          const struct ci2c_octet_buffer key);
 
-struct octet_buffer gen_ecc_key (int fd, uint8_t key_id, bool private);
+struct ci2c_octet_buffer
+gen_ecc_key (int fd, uint8_t key_id, bool private);
 
-struct octet_buffer ecc_sign (int fd, uint8_t key_id);
+struct ci2c_octet_buffer
+ecc_sign (int fd, uint8_t key_id);
 
-bool load_nonce (int fd, struct octet_buffer data);
+bool
+load_nonce (int fd, struct ci2c_octet_buffer data);
 
 #endif /* COMMAND_H */

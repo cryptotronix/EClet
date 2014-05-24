@@ -24,11 +24,10 @@
 
 #include "cli_commands.h"
 #include "config.h"
-#include "../parser/hashlet_parser.h"
 #include "../driver/personalize.h"
 // for dev only
 #include "../driver/command.h"
-#include <crypti2c/i2c.h>
+#include <libcrypti2c.h>
 
 #if HAVE_GCRYPT_H
 #include "hash.h"
@@ -38,7 +37,8 @@
 
 static struct command commands[NUM_CLI_COMMANDS];
 
-void set_defaults (struct arguments *args)
+void
+set_defaults (struct arguments *args)
 {
 
   assert (NULL != args);
@@ -68,7 +68,9 @@ void set_defaults (struct arguments *args)
 
 
 }
-void output_hex (FILE *stream, struct octet_buffer buf)
+
+void
+output_hex (FILE *stream, struct ci2c_octet_buffer buf)
 {
 
   assert (NULL != stream);
@@ -89,7 +91,8 @@ void output_hex (FILE *stream, struct octet_buffer buf)
 
 }
 
-struct command * find_command (const char* cmd)
+struct command *
+find_command (const char* cmd)
 {
   int x = 0;
 
@@ -103,7 +106,8 @@ struct command * find_command (const char* cmd)
   return NULL;
 
 }
-int add_command (const struct command cmd, int loc)
+int
+add_command (const struct command cmd, int loc)
 {
   assert (loc < NUM_CLI_COMMANDS);
 
@@ -112,7 +116,8 @@ int add_command (const struct command cmd, int loc)
   return loc+1;
 }
 
-void init_cli (struct arguments *args)
+void
+init_cli (struct arguments *args)
 {
   static const struct command random_cmd = {"random", cli_random };
   static const struct command serial_cmd = {"serial-num", cli_get_serial_num };
@@ -142,7 +147,8 @@ void init_cli (struct arguments *args)
 
 }
 
-bool cmp_commands (const char *input, const char *cmd)
+bool
+cmp_commands (const char *input, const char *cmd)
 {
   if (0 == strncmp (cmd, input, strlen (cmd)))
     return true;
@@ -150,7 +156,8 @@ bool cmp_commands (const char *input, const char *cmd)
     return false;
 }
 
-bool offline_cmd (const char *command)
+bool
+offline_cmd (const char *command)
 {
   bool is_offline = false;
 
@@ -164,7 +171,8 @@ bool offline_cmd (const char *command)
   return is_offline;
 }
 
-int dispatch (const char *command, struct arguments *args)
+int
+dispatch (const char *command, struct arguments *args)
 {
 
   int result = HASHLET_COMMAND_FAIL;
@@ -199,7 +207,8 @@ int dispatch (const char *command, struct arguments *args)
 
 }
 
-FILE* get_input_file (struct arguments *args)
+FILE*
+get_input_file (struct arguments *args)
 {
   assert (NULL != args);
 
@@ -218,7 +227,8 @@ FILE* get_input_file (struct arguments *args)
 }
 
 
-void close_input_file (struct arguments *args, FILE *f)
+void
+close_input_file (struct arguments *args, FILE *f)
 {
   assert (NULL != args);
   assert (NULL != f);
@@ -231,7 +241,8 @@ void close_input_file (struct arguments *args, FILE *f)
     }
 }
 
-bool is_expected_len (const char* arg, unsigned int len)
+bool
+is_expected_len (const char* arg, unsigned int len)
 {
   assert (NULL != arg);
 
@@ -243,19 +254,21 @@ bool is_expected_len (const char* arg, unsigned int len)
 
 }
 
-bool is_hex_arg (const char* arg, unsigned int len)
+bool
+is_hex_arg (const char* arg, unsigned int len)
 {
-  if (is_expected_len (arg, len) && is_all_hex (arg, len))
+  if (is_expected_len (arg, len) && ci2c_is_all_hex (arg, len))
     return true;
   else
     return false;
 }
 
 
-int cli_random (int fd, struct arguments *args)
+int
+cli_random (int fd, struct arguments *args)
 {
 
-  struct octet_buffer response;
+  struct ci2c_octet_buffer response;
   int result = HASHLET_COMMAND_FAIL;
   assert (NULL != args);
 
@@ -263,16 +276,17 @@ int cli_random (int fd, struct arguments *args)
   if (NULL != response.ptr)
     {
       output_hex (stdout, response);
-      free_octet_buffer (response);
+      ci2c_free_octet_buffer (response);
       result = HASHLET_COMMAND_SUCCESS;
     }
 
   return result;
 }
 
-int cli_get_serial_num (int fd, struct arguments *args)
+int
+cli_get_serial_num (int fd, struct arguments *args)
 {
-  struct octet_buffer response;
+  struct ci2c_octet_buffer response;
   int result = HASHLET_COMMAND_FAIL;
   assert (NULL != args);
 
@@ -280,7 +294,7 @@ int cli_get_serial_num (int fd, struct arguments *args)
   if (NULL != response.ptr)
     {
       output_hex (stdout, response);
-      free_octet_buffer (response);
+      ci2c_free_octet_buffer (response);
       result = HASHLET_COMMAND_SUCCESS;
     }
 
@@ -288,7 +302,8 @@ int cli_get_serial_num (int fd, struct arguments *args)
 
 }
 
-int cli_get_state (int fd, struct arguments *args)
+int
+cli_get_state (int fd, struct arguments *args)
 {
 
   int result = HASHLET_COMMAND_SUCCESS;
@@ -316,9 +331,10 @@ int cli_get_state (int fd, struct arguments *args)
 
 }
 
-int cli_get_config_zone (int fd, struct arguments *args)
+int
+cli_get_config_zone (int fd, struct arguments *args)
 {
-  struct octet_buffer response;
+  struct ci2c_octet_buffer response;
   int result = HASHLET_COMMAND_FAIL;
   assert (NULL != args);
 
@@ -326,7 +342,7 @@ int cli_get_config_zone (int fd, struct arguments *args)
   if (NULL != response.ptr)
     {
       output_hex (stdout, response);
-      free_octet_buffer (response);
+      ci2c_free_octet_buffer (response);
       result = HASHLET_COMMAND_SUCCESS;
     }
 
@@ -337,7 +353,7 @@ int cli_get_config_zone (int fd, struct arguments *args)
 
 int cli_get_otp_zone (int fd, struct arguments *args)
 {
-  struct octet_buffer response;
+  struct ci2c_octet_buffer response;
   int result = HASHLET_COMMAND_FAIL;
   assert (NULL != args);
 
@@ -352,7 +368,7 @@ int cli_get_otp_zone (int fd, struct arguments *args)
   if (NULL != response.ptr)
     {
       output_hex (stdout, response);
-      free_octet_buffer (response);
+      ci2c_free_octet_buffer (response);
       result = HASHLET_COMMAND_SUCCESS;
     }
 
@@ -362,10 +378,11 @@ int cli_get_otp_zone (int fd, struct arguments *args)
 
 }
 
-int cli_hash (int fd, struct arguments *args)
+int
+cli_hash (int fd, struct arguments *args)
 {
 
-  struct octet_buffer response;
+  struct ci2c_octet_buffer response;
   int result = HASHLET_COMMAND_FAIL;
   assert (NULL != args);
 
@@ -381,7 +398,7 @@ int cli_hash (int fd, struct arguments *args)
       if (NULL != response.ptr)
         {
           output_hex (stdout, response);
-          free_octet_buffer (response);
+          ci2c_free_octet_buffer (response);
           result = HASHLET_COMMAND_SUCCESS;
         }
 
@@ -395,7 +412,8 @@ int cli_hash (int fd, struct arguments *args)
 }
 
 
-int cli_personalize (int fd, struct arguments *args)
+int
+cli_personalize (int fd, struct arguments *args)
 {
   int result = HASHLET_COMMAND_FAIL;
   assert (NULL != args);
@@ -409,10 +427,11 @@ int cli_personalize (int fd, struct arguments *args)
 
 }
 
-void print_mac_result (FILE *fp,
-                       struct octet_buffer challenge,
-                       struct octet_buffer mac,
-                       struct octet_buffer meta)
+void
+print_mac_result (FILE *fp,
+                  struct ci2c_octet_buffer challenge,
+                  struct ci2c_octet_buffer mac,
+                  struct ci2c_octet_buffer meta)
 {
   assert (NULL != fp);
   fprintf (fp, "%s : ", "mac      ");
@@ -426,14 +445,15 @@ void print_mac_result (FILE *fp,
 
 }
 
-int cli_mac (int fd, struct arguments *args)
+int
+cli_mac (int fd, struct arguments *args)
 {
   int result = HASHLET_COMMAND_FAIL;
   assert (NULL != args);
 
 #if HAVE_GCRYPT_H
   struct mac_response rsp;
-  struct octet_buffer challenge;
+  struct ci2c_octet_buffer challenge;
   FILE *f;
   if ((f = get_input_file (args)) == NULL)
     {
@@ -451,12 +471,12 @@ int cli_mac (int fd, struct arguments *args)
             {
               print_mac_result (stdout, challenge, rsp.mac, rsp.meta);
 
-              free_octet_buffer (rsp.mac);
-              free_octet_buffer (rsp.meta);
+              ci2c_free_octet_buffer (rsp.mac);
+              ci2c_free_octet_buffer (rsp.meta);
               result = HASHLET_COMMAND_SUCCESS;
             }
 
-        free_octet_buffer (challenge);
+        ci2c_free_octet_buffer (challenge);
       }
 
       close_input_file (args, f);
@@ -468,119 +488,12 @@ int cli_mac (int fd, struct arguments *args)
   return result;
 }
 
-int cli_print_keys (int fd, struct arguments *args)
-{
-  int result = HASHLET_COMMAND_FAIL;
-  assert (NULL != args);
-
-  FILE *fp;
-
-  if (NULL == args->input_file)
-    fp = stdin;
-  else
-    fp = fopen (args->input_file, "r");
-
-  if (NULL != fp && 0 == parse_file (fp))
-    {
-      int x = 0;
-
-      for (x=0; x < 16; x++)
-        {
-          const char *key;
-          if ((key = get_key (x)) != NULL)
-            {
-              printf ("Key %d: %s\n", x, key);
-              struct octet_buffer bkey;
-              bkey = ascii_hex_2_bin (key, 64);
-              print_hex_string ("Binary Key", bkey.ptr, bkey.len);
-              free_octet_buffer (bkey);
-            }
-        }
-
-      close_input_file (args, fp);
-
-      result = HASHLET_COMMAND_SUCCESS;
-    }
-  else
-    {
-      fprintf (stderr, "%s", "Invalid file or file failed to parse\n");
-    }
 
 
-  return result;
-
-}
-const char* get_key_from_store (unsigned int slot)
-{
-  FILE *fp;
-  const char *key = NULL;
-  const char *filename = get_key_store_name ();
-  assert (NULL != filename);
-
-  fp = fopen (filename, "r");
-
-  if (NULL != fp && 0 == parse_file (fp))
-    {
-      key = get_key (slot);
-    }
-
-  fclose (fp);
-
-  return key;
-
-}
-int cli_verify_mac (int fd, struct arguments *args)
-{
-  int result = HASHLET_COMMAND_FAIL;
-  assert (NULL != args);
-#if HAVE_GCRYPT_H
-  const char* key;
-  struct octet_buffer challenge;
-  struct octet_buffer challenge_rsp;
-  struct octet_buffer key_buf;
-  const unsigned int SIZE_OF_256_BITS_ASCII = 64;
-
-  if (NULL == args->challenge_rsp)
-    fprintf (stderr, "%s\n", "Challenge Response is blank");
-  else if (NULL == args->challenge)
-    fprintf (stderr, "%s\n", "Challenge is blank");
-  else if (NULL == args->challenge && NULL == args->input_file)
-    fprintf (stderr, "%s\n", "No challenge specified on command line or file");
-  else if ((key = get_key_from_store (args->key_slot)) == NULL)
-    fprintf (stderr, "%s\n", "Invalid file or file failed to parse");
-  else
-    {
-      challenge = ascii_hex_2_bin (args->challenge, SIZE_OF_256_BITS_ASCII);
-      challenge_rsp = ascii_hex_2_bin
-        (args->challenge_rsp, SIZE_OF_256_BITS_ASCII);
-      key_buf = ascii_hex_2_bin (key, SIZE_OF_256_BITS_ASCII);
-
-      if (challenge.ptr != NULL && challenge_rsp.ptr != NULL &&
-          key_buf.ptr != NULL)
-        {
-          if (verify_hash_defaults (challenge, challenge_rsp, key_buf,
-              args->key_slot))
-            {
-              result = HASHLET_COMMAND_SUCCESS;
-            }
-          else
-            fprintf (stderr, "%s\n", "Verify MAC failed");
-        }
-
-      free_octet_buffer (challenge);
-      free_octet_buffer (challenge_rsp);
-      free_octet_buffer (key_buf);
-      free_parsed_keys ();
-    }
-#else
-  printf ("%s\n", NO_GCRYPT);
-#endif
-  return result;
-
-}
 
 
-int cli_check_mac (int fd, struct arguments *args)
+int
+cli_check_mac (int fd, struct arguments *args)
 {
 
   int result = HASHLET_COMMAND_FAIL;
@@ -601,15 +514,15 @@ int cli_check_mac (int fd, struct arguments *args)
       NULL == args->meta)
     return result;
 
-  struct octet_buffer challenge = ascii_hex_2_bin (args->challenge, 64);
-  struct octet_buffer challenge_rsp = ascii_hex_2_bin (args->challenge_rsp, 64);
-  struct octet_buffer meta = ascii_hex_2_bin (args->meta, 26);
+  struct ci2c_octet_buffer challenge = ci2c_ascii_hex_2_bin (args->challenge, 64);
+  struct ci2c_octet_buffer challenge_rsp = ci2c_ascii_hex_2_bin (args->challenge_rsp, 64);
+  struct ci2c_octet_buffer meta = ci2c_ascii_hex_2_bin (args->meta, 26);
 
   mac_cmp = check_mac (fd,  cm, args->key_slot, challenge, challenge_rsp, meta);
 
-  free_octet_buffer (challenge);
-  free_octet_buffer (challenge_rsp);
-  free_octet_buffer (meta);
+  ci2c_free_octet_buffer (challenge);
+  ci2c_free_octet_buffer (challenge_rsp);
+  ci2c_free_octet_buffer (meta);
 
   if (mac_cmp)
     result = HASHLET_COMMAND_SUCCESS;
@@ -621,37 +534,38 @@ int cli_check_mac (int fd, struct arguments *args)
 
 }
 
-struct encrypted_write cli_mac_write (int fd, struct octet_buffer data,
-                                   unsigned int slot, const char *ascii_key)
+struct encrypted_write
+cli_mac_write (int fd, struct ci2c_octet_buffer data,
+               unsigned int slot, const char *ascii_key)
 {
 
   struct encrypted_write result;
 
-  struct octet_buffer key = {0,0};
+  struct ci2c_octet_buffer key = {0,0};
 
   if (NULL != ascii_key)
     {
-      key = ascii_hex_2_bin (ascii_key, 64);
+      key = ci2c_ascii_hex_2_bin (ascii_key, 64);
     }
   else
     {
-      CTX_LOG (DEBUG, "Previous key value not provided");
+      CI2C_LOG (DEBUG, "Previous key value not provided");
       return result;
     }
 
 
-  struct octet_buffer otp = get_otp_zone (fd);
+  struct ci2c_octet_buffer otp = get_otp_zone (fd);
 
-  struct octet_buffer nonce = get_nonce (fd);
+  struct ci2c_octet_buffer nonce = get_nonce (fd);
 
-  struct octet_buffer nonce_temp_key = gen_temp_key_from_nonce (fd, nonce, otp);
+  struct ci2c_octet_buffer nonce_temp_key = gen_temp_key_from_nonce (fd, nonce, otp);
 
   assert (gen_digest (fd, DATA_ZONE, slot));
 
-  struct octet_buffer temp_key = gen_temp_key_from_digest (fd, nonce_temp_key,
+  struct ci2c_octet_buffer temp_key = gen_temp_key_from_digest (fd, nonce_temp_key,
                                                            slot, key);
 
-  result.encrypted = xor_buffers (temp_key, key);
+  result.encrypted = ci2c_xor_buffers (temp_key, key);
 
   const uint8_t opcode = 0x12;
   const uint8_t param1 = 0b10000010;
@@ -660,18 +574,19 @@ struct encrypted_write cli_mac_write (int fd, struct octet_buffer data,
   param2[0] = slot_to_addr (DATA_ZONE, slot);
   result.mac = mac_write (temp_key, opcode, param1, param2, data);
 
-  print_hex_string ("OTP", otp.ptr, otp.len);
+  ci2c_print_hex_string ("OTP", otp.ptr, otp.len);
 
-  free_octet_buffer (otp);
-  free_octet_buffer (nonce);
-  free_octet_buffer (nonce_temp_key);
-  free_octet_buffer (temp_key);
+  ci2c_free_octet_buffer (otp);
+  ci2c_free_octet_buffer (nonce);
+  ci2c_free_octet_buffer (nonce_temp_key);
+  ci2c_free_octet_buffer (temp_key);
 
   return result;
 
 }
 
-int cli_write_to_key_slot (int fd, struct arguments *args)
+int
+cli_write_to_key_slot (int fd, struct arguments *args)
 {
 
   int result = HASHLET_COMMAND_FAIL;
@@ -679,14 +594,14 @@ int cli_write_to_key_slot (int fd, struct arguments *args)
 
   const unsigned int ASCII_KEY_SIZE = 64;
 
-  struct octet_buffer key = {0,0};
+  struct ci2c_octet_buffer key = {0,0};
 
   if (NULL == args->write_data)
     fprintf (stderr, "%s\n" ,"Pass the key slot data in the -w option");
 
   else
     {
-      key = ascii_hex_2_bin (args->write_data, ASCII_KEY_SIZE);
+      key = ci2c_ascii_hex_2_bin (args->write_data, ASCII_KEY_SIZE);
       if (NULL != key.ptr)
         {
           struct encrypted_write write = cli_mac_write (fd, key, args->key_slot,
@@ -698,18 +613,18 @@ int cli_write_to_key_slot (int fd, struct arguments *args)
                        write.encrypted,
                        &write.mac))
             {
-              CTX_LOG (DEBUG, "Write success");
+              CI2C_LOG (DEBUG, "Write success");
               result = HASHLET_COMMAND_SUCCESS;
             }
           else
             fprintf (stderr, "%s\n" ,"Key slot can not be written.");
 
           if (NULL != write.mac.ptr)
-            free_octet_buffer (write.mac);
+            ci2c_free_octet_buffer (write.mac);
           if (NULL != write.encrypted.ptr)
-            free_octet_buffer (write.encrypted);
+            ci2c_free_octet_buffer (write.encrypted);
 
-          free_octet_buffer (key);
+          ci2c_free_octet_buffer (key);
         }
       else
         {
@@ -721,19 +636,20 @@ int cli_write_to_key_slot (int fd, struct arguments *args)
 
 }
 
-int cli_read_key_slot (int fd, struct arguments *args)
+int
+cli_read_key_slot (int fd, struct arguments *args)
 {
   int result = HASHLET_COMMAND_FAIL;
   assert (NULL != args);
 
-  struct octet_buffer buf = {0,0};
+  struct ci2c_octet_buffer buf = {0,0};
   buf = read32 (fd, DATA_ZONE, slot_to_addr (DATA_ZONE, args->key_slot));
 
   if (NULL != buf.ptr)
     {
       result = HASHLET_COMMAND_SUCCESS;
       output_hex (stdout, buf);
-      free_octet_buffer (buf);
+      ci2c_free_octet_buffer (buf);
     }
   else
     fprintf (stderr, "%s%d\n" ,"Data can't be read from key slot: ",
@@ -743,17 +659,18 @@ int cli_read_key_slot (int fd, struct arguments *args)
 
 }
 
-int cli_get_nonce (int fd, struct arguments *args)
+int
+cli_get_nonce (int fd, struct arguments *args)
 {
   int result = HASHLET_COMMAND_FAIL;
   assert (NULL != args);
 
-  struct octet_buffer nonce = get_nonce (fd);
+  struct ci2c_octet_buffer nonce = get_nonce (fd);
 
   if (nonce.len == 32 && nonce.ptr != NULL)
     {
       output_hex (stdout, nonce);
-      free_octet_buffer (nonce);
+      ci2c_free_octet_buffer (nonce);
       result = HASHLET_COMMAND_SUCCESS;
     }
   else
@@ -764,17 +681,18 @@ int cli_get_nonce (int fd, struct arguments *args)
 
 }
 
-int cli_gen_key (int fd, struct arguments *args)
+int
+cli_gen_key (int fd, struct arguments *args)
 {
   int result = HASHLET_COMMAND_FAIL;
   assert (NULL != args);
 
-  struct octet_buffer pub_key = gen_ecc_key (fd, args->key_slot, true);
+  struct ci2c_octet_buffer pub_key = gen_ecc_key (fd, args->key_slot, true);
 
   if (NULL != pub_key.ptr)
     {
       output_hex (stdout, pub_key);
-      free_octet_buffer (pub_key);
+      ci2c_free_octet_buffer (pub_key);
       result = HASHLET_COMMAND_SUCCESS;
     }
   else
@@ -786,7 +704,8 @@ int cli_gen_key (int fd, struct arguments *args)
 
 }
 
-int cli_dev (int fd, struct arguments *args)
+int
+cli_dev (int fd, struct arguments *args)
 {
   int result = HASHLET_COMMAND_FAIL;
   assert (NULL != args);
@@ -799,12 +718,12 @@ int cli_dev (int fd, struct arguments *args)
   printf ("%s %d\n", "Config locked", config_locked);
   printf ("%s %d\n", "Data locked", data_locked);
 
-  struct octet_buffer pub_key = gen_ecc_key (fd, args->key_slot, true);
+  struct ci2c_octet_buffer pub_key = gen_ecc_key (fd, args->key_slot, true);
 
-  print_hex_string ("Pub key", pub_key.ptr, pub_key.len);
+  ci2c_print_hex_string ("Pub key", pub_key.ptr, pub_key.len);
 
   pub_key = gen_ecc_key (fd, args->key_slot, true);
-  print_hex_string ("Pub key", pub_key.ptr, pub_key.len);
+  ci2c_print_hex_string ("Pub key", pub_key.ptr, pub_key.len);
 
   /* if (set_config_zone (fd)) */
   /*   { */
@@ -813,7 +732,7 @@ int cli_dev (int fd, struct arguments *args)
   /*       printf ("Locked"); */
   /*   } */
 
-  /* struct octet_buffer otp_zone; */
+  /* struct ci2c_octet_buffer otp_zone; */
   /* if (set_otp_zone (fd, &otp_zone)) */
   /*   { */
   /*     if (lock (fd, DATA_ZONE, 0)) */
@@ -823,7 +742,7 @@ int cli_dev (int fd, struct arguments *args)
 
   /*         pub_key = gen_ecc_key (fd, args->key_slot, true); */
 
-  /*         print_hex_string ("Pub key", pub_key.ptr, pub_key.len); */
+  /*         ci2c_print_hex_string ("Pub key", pub_key.ptr, pub_key.len); */
   /*       } */
 
   /*   } */
@@ -836,7 +755,8 @@ int cli_dev (int fd, struct arguments *args)
 }
 
 
-int cli_ecc_sign (int fd, struct arguments *args)
+int
+cli_ecc_sign (int fd, struct arguments *args)
 {
   int result = HASHLET_COMMAND_FAIL;
   assert (NULL != args);
@@ -846,33 +766,33 @@ int cli_ecc_sign (int fd, struct arguments *args)
   if ((f = get_input_file (args)) != NULL)
     {
       /* Digest the file then proceed */
-      struct octet_buffer file_digest = {0,0};
+      struct ci2c_octet_buffer file_digest = {0,0};
       file_digest = sha256 (f);
       close_input_file (args, f);
 
-      print_hex_string ("SHA256 file digest", file_digest.ptr, file_digest.len);
+      ci2c_print_hex_string ("SHA256 file digest", file_digest.ptr, file_digest.len);
 
       if (NULL != file_digest.ptr)
         {
 
-          /* struct octet_buffer blank_nonce = make_buffer (20); */
-          /* struct octet_buffer temp_nonce = gen_nonce (fd, */
+          /* struct ci2c_octet_buffer blank_nonce = make_buffer (20); */
+          /* struct ci2c_octet_buffer temp_nonce = gen_nonce (fd, */
           /*                                             blank_nonce); */
 
-          struct octet_buffer r = get_random (fd, true);
-          r = get_random (fd, true);
-          r = get_random (fd, true);
-          r = get_random (fd, false);
+          struct ci2c_octet_buffer r = get_random (fd, true);
+          /* r = get_random (fd, true); */
+          /* r = get_random (fd, true); */
+          /* r = get_random (fd, false); */
 
           if (load_nonce (fd, file_digest))
             {
 
-              struct octet_buffer rsp = ecc_sign (fd, args->key_slot);
+              struct ci2c_octet_buffer rsp = ecc_sign (fd, args->key_slot);
 
               if (NULL != rsp.ptr)
                 {
                   output_hex (stdout, rsp);
-                  free_octet_buffer (rsp);
+                  ci2c_free_octet_buffer (rsp);
                   result = HASHLET_COMMAND_SUCCESS;
                 }
               else

@@ -23,13 +23,13 @@
 
 #include "defs.h"
 #include "command.h"
-#include <crypti2c/util.h>
+#include <libcrypti2c.h>
 
 #define KEY_STORE "/.hashlet"
 
 struct key_container
 {
-  struct octet_buffer keys[MAX_NUM_DATA_SLOTS];
+  struct ci2c_octet_buffer keys[MAX_NUM_DATA_SLOTS];
 };
 
 /**
@@ -76,7 +76,7 @@ enum DEVICE_STATE personalize (int fd, enum DEVICE_STATE goal,
  * @return
  */
 bool write_keys (int fd, struct key_container *keys,
-                 struct octet_buffer *data_zone);
+                 struct ci2c_octet_buffer *data_zone);
 
 /**
  * Returns the filename of the key_store location
