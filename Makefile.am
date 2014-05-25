@@ -39,3 +39,9 @@ dist_noinst_SCRIPTS = autogen.sh
 
 TESTS = src/tests/test_cli.sh
 EXTRA_DIST = src/tests/test_cli.sh
+
+get-deps:
+	git clone https://github.com/cryptotronix/libcrypti2c.git
+	cd libcrypti2c && ./autogen.sh && sudo make install && cd ..
+
+.PHONY:	get-deps

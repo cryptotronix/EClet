@@ -1,0 +1,8 @@
+language: c
+compiler:
+  - gcc
+  - clang
+# Change this to your needs
+before_install: sudo apt-get install texinfo
+install: make get-deps
+script: ./autogen.sh
