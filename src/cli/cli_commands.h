@@ -35,6 +35,7 @@
 /* Command list */
 #define CMD_OFFLINE_VERIFY "offline-verify"
 #define CMD_HASH "hash"
+#define CMD_OFFLINE_VERIFY_SIGN "offline-verify-sign"
 
 /* Used by main to communicate with parse_opt. */
 struct arguments
@@ -283,6 +284,17 @@ cli_ecc_verify (int fd, struct arguments *args);
  */
 int
 cli_get_pub_key (int fd, struct arguments *args);
+
+/**
+ * Performs an ECDSA signature verification without the device.
+ *
+ * @param fd The open file descriptor
+ * @param args The arg
+ *
+ * @return The status code
+ */
+int
+cli_ecc_offline_verify (int fd, struct arguments *args);
 
 int cli_dev (int fd, struct arguments *args);
 #endif /* CLI_COMMANDS_H */

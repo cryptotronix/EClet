@@ -119,6 +119,8 @@ init_cli (struct arguments *args)
   static const struct command ecc_sign_cmd = {"sign", cli_ecc_sign };
   static const struct command ecc_verify_cmd = {"verify", cli_ecc_verify };
   static const struct command ecc_get_pub_cmd = {"get-pub", cli_get_pub_key };
+  static const struct command offline_ecc_verify_cmd =
+    {CMD_OFFLINE_VERIFY_SIGN, cli_ecc_offline_verify };
   int x = 0;
 
   x = add_command (random_cmd, x);
@@ -133,6 +135,7 @@ init_cli (struct arguments *args)
   x = add_command (ecc_sign_cmd, x);
   x = add_command (ecc_verify_cmd, x);
   x = add_command (ecc_get_pub_cmd, x);
+  x = add_command (offline_ecc_verify_cmd, x);
 
   set_defaults (args);
 
@@ -157,6 +160,8 @@ offline_cmd (const char *command)
   else if (cmp_commands (command, CMD_OFFLINE_VERIFY))
     is_offline = true;
   else if (cmp_commands (command, CMD_HASH))
+    is_offline = true;
+  else if (cmp_commands (command, CMD_OFFLINE_VERIFY_SIGN))
     is_offline = true;
 
   return is_offline;
@@ -610,11 +615,18 @@ cli_ecc_verify (int fd, struct arguments *args)
                   if (ecc_verify (fd, pub_key, signature))
                     {
                       result = HASHLET_COMMAND_SUCCESS;
+
                     }
                   else
                     {
                       fprintf (stderr, "%s\n", "Verify Command failed.");
                     }
+
+                  bool gv = ci2c_ecdsa_p256_verify (pub_key, signature, file_digest);
+                  if (gv)
+                    CI2C_LOG (DEBUG, "Gcrypt says good");
+                  else
+                    CI2C_LOG (DEBUG, "Gcrypt says bad");
 
                 }
 
@@ -630,6 +642,76 @@ cli_ecc_verify (int fd, struct arguments *args)
 
       ci2c_free_octet_buffer (pub_key);
       ci2c_free_octet_buffer (signature);
+    }
+
+  return result;
+}
+
+int
+cli_ecc_offline_verify (int fd, struct arguments *args)
+{
+  int result = HASHLET_COMMAND_FAIL;
+  assert (NULL != args);
+
+  FILE *f = NULL;
+  struct ci2c_octet_buffer signature = {0,0};
+  struct ci2c_octet_buffer pub_key = {0,0};
+
+  if (NULL == args->signature)
+    {
+      perror ("Signature required");
+    }
+  else if (NULL == args->pub_key)
+    {
+      perror ("Public Key required");
+    }
+  else
+    {
+      signature = ci2c_ascii_hex_2_bin (args->signature, 128);
+      ci2c_print_hex_string ("Signature", signature.ptr, signature.len);
+
+      pub_key = ci2c_ascii_hex_2_bin (args->pub_key, 128);
+      ci2c_print_hex_string ("Public Key", pub_key.ptr, pub_key.len);
+
+      if ((f = get_input_file (args)) != NULL)
+        {
+          /* Digest the file then proceed */
+          struct ci2c_octet_buffer file_digest = {0,0};
+          file_digest = ci2c_sha256 (f);
+          close_input_file (args, f);
+
+          ci2c_print_hex_string ("SHA256 file digest",
+                                 file_digest.ptr,
+                                 file_digest.len);
+
+          if (NULL != file_digest.ptr)
+            {
+              if (ci2c_ecdsa_p256_verify (pub_key, signature, file_digest))
+                {
+                  CI2C_LOG (DEBUG, "Gcrypt says good");
+                  result = HASHLET_COMMAND_SUCCESS;
+                }
+              else
+                {
+                  CI2C_LOG (DEBUG, "Gcrypt says bad");
+                }
+
+              ci2c_free_octet_buffer (file_digest);
+
+
+            }
+          else
+            {
+              CI2C_LOG (DEBUG, "Digest NULL");
+            }
+
+          ci2c_free_octet_buffer (pub_key);
+          ci2c_free_octet_buffer (signature);
+        }
+      else
+        {
+          CI2C_LOG (DEBUG, "Error loading file");
+        }
     }
 
   return result;

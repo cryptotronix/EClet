@@ -41,10 +41,11 @@ const char *argp_program_bug_address = PACKAGE_BUGREPORT;
 
 /* Program documentation. */
 static char doc[] =
-  "Hashlet is a program to interface to the Cryptotronix Hashlet.\n\n"
+  "EClet is a program to interface to the Cryptotronix EClet which contains\n"
+  "an Atmel ATECC108\n\n"
   "Currently implemented Commands:\n\n"
   "personalize   --  You should run this command first upon receiving your\n"
-  "                  Hashlet.  It will load your keys and save them to\n"
+  "                  EClet.  It will load your keys and save them to\n"
   "                  ~/.hashlet as a backup\n"
   "random        --  Retrieves 32 bytes of random data from the device.\n"
   "serial-num    --  Retrieves the device's serial number.\n"
