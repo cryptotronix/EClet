@@ -44,10 +44,7 @@ set_defaults (struct arguments *args)
   args->update_seed = false;
   args->key_slot = 0;
 
-  args->challenge = NULL;
-  args->challenge_rsp = NULL;
   args->signature = NULL;
-  args->meta = NULL;
   args->write_data = NULL;
 
   args->address = 0x60;

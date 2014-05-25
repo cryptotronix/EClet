@@ -2,7 +2,7 @@ Eclet NEWS -- history of user-visible changes
 
 Copyright (C) 2014 Cryptotronix, LLC.
 
-* Hashlet 0.1.0 - Beta Release - May 2014
+* EClet 0.1.0 - Beta Release - May 2014
 
 The initial release of EClet is concerned a Beta release.
 
@@ -14,9 +14,9 @@ The following commands are supported:
 
 **** personalize
 **** random
-**** mac
-**** check-mac
-**** offline-verify
+**** verify
+**** sign
+**** offline-verify-sign
 **** serial-num
 **** state
 
@@ -38,7 +38,7 @@ MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 GNU General Public License for more details.
 
 You should have received a copy of the GNU General Public License
-along with EClet.  If not, see <http://www.gnu.org/licenses/>.
+along with EClet .  If not, see <http://www.gnu.org/licenses/>.
 
 Local variables:
 mode: outline

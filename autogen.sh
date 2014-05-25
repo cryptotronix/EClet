@@ -29,8 +29,10 @@ else
     git clone https://github.com/cryptotronix/libcrypti2c.git
     cd libcrypti2c
     ./autogen.sh
+    echo Enter password to install libcrypti2c library
     sudo make install
     cd ..
+    sudo ldconfig
 fi
 
 autoreconf --force --install

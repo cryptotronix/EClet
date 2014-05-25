@@ -45,11 +45,11 @@ static char doc[] =
   "an Atmel ATECC108\n\n"
   "Currently implemented Commands:\n\n"
   "personalize   --  You should run this command first upon receiving your\n"
-  "                  EClet.  It will load your keys and save them to\n"
-  "                  ~/.hashlet as a backup\n"
+  "                  EClet.\n"
   "random        --  Retrieves 32 bytes of random data from the device.\n"
   "serial-num    --  Retrieves the device's serial number.\n"
   "get-config    --  Dumps the configuration zone\n"
+  "get-otp       --  Dumps the OTP (one time programmable) zone\n"
   "state         --  Returns the device's state.\n"
   "                  Factory -- Random will produced a fixed 0xFFFF0000\n"
   "                  Initialized -- Configuration is locked, keys may be \n"
@@ -57,7 +57,22 @@ static char doc[] =
   "                  Personalized -- Keys are loaded.  Memory is locked\n"
   "nonce         --  Generates a nonce and loads the value inside the internal\n"
   "                  tempkey register.  The value that will be return is the\n"
-  "                  32 byte random number, which constitutes part of the nonce\n";
+  "                  32 byte random number, which constitutes part of the nonce\n"
+  "gen-key       --  Generates a P256 Private key in the specified key slot\n"
+  "                  Returns the Public Key (x,y) with the leading uncompressed\n"
+  "                  point format tag (0x04)"
+  "sign          --  Performs an ECDSA signature using the NIST P-256 curve.\n"
+  "                  Specify the file to signed with -f, which will be SHA-256\n"
+  "                  hashed prior to signing. Specify the key with -k.\n"
+  "                  Returns the signature (R,S)\n"
+  "verify        --  Uses the device to verify the signature.\n"
+  "                  Specify the public key with --public-key, you must include\n"
+  "                    the 0x04 tag followed by xy\n"
+  "                  Specify the signature with --signature\n"
+  "                  Specify the file with -f, it will be hashed with SHA256\n"
+  "offline-verify-sign\n"
+  "              --  Same as verify except it does NOT use the device, but a \n"
+  "                  software library.";
 
 
 /* A description of the arguments we accept. */
