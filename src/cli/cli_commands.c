@@ -689,17 +689,15 @@ cli_ecc_offline_verify (int fd, struct arguments *args)
             {
               if (ci2c_ecdsa_p256_verify (pub_key, signature, file_digest))
                 {
-                  CI2C_LOG (DEBUG, "Gcrypt says good");
+                  CI2C_LOG (DEBUG, "Verify Success");
                   result = HASHLET_COMMAND_SUCCESS;
                 }
               else
                 {
-                  CI2C_LOG (DEBUG, "Gcrypt says bad");
+                  CI2C_LOG (DEBUG, "Verify Failure");
                 }
 
               ci2c_free_octet_buffer (file_digest);
-
-
             }
           else
             {
