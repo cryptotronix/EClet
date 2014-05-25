@@ -18,15 +18,6 @@
  *
  */
 
-/**
- * @file   command.h
- * @author Joshua Datko <jbd@cryptotronix.com>
- * @date   Tue Dec  3 09:13:45 2013
- *
- * @brief Command interface for the ATSHA204
- *
- *
- */
 #ifndef COMMAND_H
 #define COMMAND_H
 

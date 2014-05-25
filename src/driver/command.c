@@ -851,9 +851,6 @@ struct ci2c_octet_buffer gen_ecc_key (int fd, uint8_t key_id, bool private)
 
   return pub_key;
 
-
-
-
 }
 
 
@@ -901,10 +898,10 @@ ecc_verify (int fd,
 {
 
   assert (NULL != signature.ptr);
-  assert (64 <= signature.len); /* P256 signatures are 64 bytes */
+  assert (64 == signature.len); /* P256 signatures are 64 bytes */
 
   assert (NULL != pub_key.ptr);
-  assert (64 <= pub_key.len); /* P256 Public Keys are 64 bytes */
+  assert (64 == pub_key.len); /* P256 Public Keys are 64 bytes */
 
   uint8_t param2[2] = {0};
   uint8_t param1 = 0x02; /* Currently only support external keys */
