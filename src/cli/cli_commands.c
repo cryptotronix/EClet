@@ -25,8 +25,6 @@
 #include "cli_commands.h"
 #include "config.h"
 #include "../driver/personalize.h"
-// for dev only
-#include "../driver/command.h"
 #include <libcrypti2c.h>
 
 static struct command commands[NUM_CLI_COMMANDS];
@@ -90,6 +88,7 @@ find_command (const char* cmd)
   return NULL;
 
 }
+
 int
 add_command (const struct command cmd, int loc)
 {
@@ -110,8 +109,6 @@ init_cli (struct arguments *args)
   static const struct command otp_cmd = {"get-otp", cli_get_otp_zone };
   static const struct command personalize_cmd = {"personalize",
                                                  cli_personalize };
-  static const struct command nonce_cmd = {"nonce", cli_get_nonce };
-  static const struct command dev_cmd = {"dev", cli_dev };
   static const struct command gen_key = {"gen-key", cli_gen_key };
   static const struct command ecc_sign_cmd = {"sign", cli_ecc_sign };
   static const struct command ecc_verify_cmd = {"verify", cli_ecc_verify };
@@ -126,8 +123,6 @@ init_cli (struct arguments *args)
   x = add_command (config_cmd, x);
   x = add_command (otp_cmd, x);
   x = add_command (personalize_cmd, x);
-  x = add_command (nonce_cmd, x);
-  x = add_command (dev_cmd, x);
   x = add_command (gen_key, x);
   x = add_command (ecc_sign_cmd, x);
   x = add_command (ecc_verify_cmd, x);
@@ -186,7 +181,7 @@ dispatch (const char *command, struct arguments *args)
           result = (*cmd->func)(fd, args);
         }
       else if ((fd = ci2c_atmel_setup (bus, args->address)) < 0)
-        perror ("Failed to setup the hashlet");
+        perror ("Failed to setup the device");
       else
         {
           result = (*cmd->func)(fd, args);
@@ -413,28 +408,6 @@ cli_read_key_slot (int fd, struct arguments *args)
 }
 
 int
-cli_get_nonce (int fd, struct arguments *args)
-{
-  int result = HASHLET_COMMAND_FAIL;
-  assert (NULL != args);
-
-  struct ci2c_octet_buffer nonce = get_nonce (fd);
-
-  if (nonce.len == 32 && nonce.ptr != NULL)
-    {
-      output_hex (stdout, nonce);
-      ci2c_free_octet_buffer (nonce);
-      result = HASHLET_COMMAND_SUCCESS;
-    }
-  else
-    fprintf (stderr, "%s\n", "Nonce generation failed");
-
-
-  return result;
-
-}
-
-int
 cli_gen_key (int fd, struct arguments *args)
 {
   int result = HASHLET_COMMAND_FAIL;
@@ -456,60 +429,10 @@ cli_gen_key (int fd, struct arguments *args)
     }
   else
     {
-      fprintf (stderr, "%s\n", "Gen key commandfailed");
+      fprintf (stderr, "%s\n", "Gen key command failed");
     }
 
   return result;
-
-}
-
-int
-cli_dev (int fd, struct arguments *args)
-{
-  int result = HASHLET_COMMAND_FAIL;
-  assert (NULL != args);
-
-  bool config_locked = is_config_locked (fd);
-  bool data_locked = is_data_locked (fd);
-
-  enum DEVICE_STATE state = get_device_state (fd);
-
-  printf ("%s %d\n", "Config locked", config_locked);
-  printf ("%s %d\n", "Data locked", data_locked);
-
-  struct ci2c_octet_buffer pub_key = gen_ecc_key (fd, args->key_slot, true);
-
-  ci2c_print_hex_string ("Pub key", pub_key.ptr, pub_key.len);
-
-  pub_key = gen_ecc_key (fd, args->key_slot, true);
-  ci2c_print_hex_string ("Pub key", pub_key.ptr, pub_key.len);
-
-  /* if (set_config_zone (fd)) */
-  /*   { */
-  /*     printf ("Config zone set\n"); */
-  /*     if (lock_config_zone (fd, state)) */
-  /*       printf ("Locked"); */
-  /*   } */
-
-  /* struct ci2c_octet_buffer otp_zone; */
-  /* if (set_otp_zone (fd, &otp_zone)) */
-  /*   { */
-  /*     if (lock (fd, DATA_ZONE, 0)) */
-  /*       { */
-  /*         state = STATE_PERSONALIZED; */
-  /*         assert (get_device_state (fd) == state); */
-
-  /*         pub_key = gen_ecc_key (fd, args->key_slot, true); */
-
-  /*         ci2c_print_hex_string ("Pub key", pub_key.ptr, pub_key.len); */
-  /*       } */
-
-  /*   } */
-
-  return result;
-
-
-
 
 }
 
@@ -529,7 +452,9 @@ cli_ecc_sign (int fd, struct arguments *args)
       file_digest = ci2c_sha256 (f);
       close_input_file (args, f);
 
-      ci2c_print_hex_string ("SHA256 file digest", file_digest.ptr, file_digest.len);
+      ci2c_print_hex_string ("SHA256 file digest",
+                             file_digest.ptr,
+                             file_digest.len);
 
       if (NULL != file_digest.ptr)
         {
@@ -562,7 +487,7 @@ cli_ecc_sign (int fd, struct arguments *args)
     }
   else
     {
-      /* temp_key_loaded already false */
+      CI2C_LOG (DEBUG, "File pointer is NULL");
     }
 
 

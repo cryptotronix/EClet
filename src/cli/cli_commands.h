@@ -161,68 +161,6 @@ int cli_hash (int fd, struct arguments *args);
  */
 int cli_personalize (int fd, struct arguments *args);
 
-/**
- * Performs the MAC command.
- *
- * @param fd The open file descriptor
- * @param args The argument structure
- *
- * @return the exit code
- */
-int cli_mac (int fd, struct arguments *args);
-
-/**
- * Test function to display the keys in the stored file
- *
- * @param fd The open file descriptor
- * @param args The args
- *
- * @return the exit code
- */
-int cli_print_keys (int fd, struct arguments *args);
-
-/**
- * Verifies a MAC from a Hashlet (without needing the hardware)
- *
- * @param fd The open file descriptor
- * @param args The args
- *
- * @return the exit code
- */
-int cli_verify_mac (int fd, struct arguments *args);
-
-/**
- * Uses the hashlet to verify a mac.  Either a MAC file must be
- * provided or the options: challenge, mac, and meta-data must be set.
- *
- * @param fd The open file descriptor
- * @param args The args
- *
- * @return the exit code
- */
-int cli_check_mac (int fd, struct arguments *args);
-
-/**
- * Attempts to write to the key slot specified by the key slot option.
- *
- * @param fd The open file descriptor.
- * @param args The args
- *
- * @return the exit code.  This command has a high probability of
- * failure if a writable key slot is not chosen.
- */
-int cli_write_to_key_slot (int fd, struct arguments *args);
-
-/**
- * Returns a nonce and loads the combined nonce value into tempkey.
- *
- * @param fd The open file descriptor
- * @param args The arguments
- *
- * @return The appropriate exit code.
- */
-int cli_get_nonce (int fd, struct arguments *args);
-
 bool is_expected_len (const char* arg, unsigned int len);
 bool is_hex_arg (const char* arg, unsigned int len);
 
@@ -238,27 +176,17 @@ bool is_hex_arg (const char* arg, unsigned int len);
  */
 int cli_read_key_slot (int fd, struct arguments *args);
 
-struct encrypted_write
-{
-  struct ci2c_octet_buffer mac;
-  struct ci2c_octet_buffer encrypted;
-};
+int cli_gen_key (int fd, struct arguments *args);
 
 /**
- * Prepares the data for an encrypted write operation.
+ * Perform an ECDSA signature. Data is passed in with the file option
+ * or on stdin, which is then hashed with SHA256 prior to signing.
  *
  * @param fd The open file descriptor.
- * @param data The plain text data to write.
- * @param slot The destination slot.
- * @param ascii_key The current key value in the slot.
+ * @param args The args
  *
- * @return The malloc'd encrypted write structure containing both the
- * mac and the encrypted data.
+ * @return exit code.
  */
-struct encrypted_write cli_mac_write (int fd, struct ci2c_octet_buffer data,
-                                      unsigned int slot, const char *ascii_key);
-
-int cli_gen_key (int fd, struct arguments *args);
 int cli_ecc_sign (int fd, struct arguments *args);
 
 /**
@@ -296,7 +224,4 @@ cli_get_pub_key (int fd, struct arguments *args);
 int
 cli_ecc_offline_verify (int fd, struct arguments *args);
 
-
-
-int cli_dev (int fd, struct arguments *args);
 #endif /* CLI_COMMANDS_H */
