@@ -19,6 +19,20 @@
 if [ ! -d "m4" ]; then
     mkdir m4
 fi
+
+pkg-config --exists crypti2c-0.1
+HAVE_CRYPTI2C=$?
+
+if [ $HAVE_CRYPTI2C -eq 0 ]; then
+    echo libcrypti2c already installed
+else
+    git clone https://github.com/cryptotronix/libcrypti2c.git
+    cd libcrypti2c
+    ./autogen.sh
+    sudo make install
+    cd ..
+fi
+
 autoreconf --force --install
 ./configure
 make
