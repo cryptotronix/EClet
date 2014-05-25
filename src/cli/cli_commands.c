@@ -447,8 +447,14 @@ cli_gen_key (int fd, struct arguments *args)
 
   if (NULL != pub_key.ptr)
     {
-      output_hex (stdout, pub_key);
-      ci2c_free_octet_buffer (pub_key);
+      struct ci2c_octet_buffer uncompressed =
+        ci2c_add_uncompressed_point_tag (pub_key);
+
+      assert (NULL != uncompressed.ptr);
+      assert (65 == uncompressed.len);
+
+      output_hex (stdout, uncompressed);
+      ci2c_free_octet_buffer (uncompressed);
       result = HASHLET_COMMAND_SUCCESS;
     }
   else
@@ -590,7 +596,7 @@ cli_ecc_verify (int fd, struct arguments *args)
       signature = ci2c_ascii_hex_2_bin (args->signature, 128);
       ci2c_print_hex_string ("Signature", signature.ptr, signature.len);
 
-      pub_key = ci2c_ascii_hex_2_bin (args->pub_key, 128);
+      pub_key = ci2c_ascii_hex_2_bin (args->pub_key, 130);
       ci2c_print_hex_string ("Public Key", pub_key.ptr, pub_key.len);
 
       if ((f = get_input_file (args)) != NULL)
@@ -612,6 +618,10 @@ cli_ecc_verify (int fd, struct arguments *args)
               if (load_nonce (fd, file_digest))
                 {
 
+                  /* The ECC108 doesn't use the leading uncompressed
+                     point format tag */
+                  pub_key.ptr = pub_key.ptr + 1;
+                  pub_key.len = pub_key.len - 1;
                   if (ecc_verify (fd, pub_key, signature))
                     {
                       result = HASHLET_COMMAND_SUCCESS;
@@ -622,12 +632,9 @@ cli_ecc_verify (int fd, struct arguments *args)
                       fprintf (stderr, "%s\n", "Verify Command failed.");
                     }
 
-                  bool gv = ci2c_ecdsa_p256_verify (pub_key, signature, file_digest);
-                  if (gv)
-                    CI2C_LOG (DEBUG, "Gcrypt says good");
-                  else
-                    CI2C_LOG (DEBUG, "Gcrypt says bad");
-
+                  /* restore pub key */
+                  pub_key.ptr = pub_key.ptr - 1;
+                  pub_key.len = pub_key.len + 1;
                 }
 
             }
@@ -694,6 +701,7 @@ cli_ecc_offline_verify (int fd, struct arguments *args)
                 }
               else
                 {
+                  perror ("Verify Failed\n");
                   CI2C_LOG (DEBUG, "Verify Failure");
                 }
 
@@ -728,8 +736,15 @@ cli_get_pub_key (int fd, struct arguments *args)
 
   if (NULL != pub_key.ptr)
     {
-      output_hex (stdout, pub_key);
-      ci2c_free_octet_buffer (pub_key);
+
+      struct ci2c_octet_buffer uncompressed =
+        ci2c_add_uncompressed_point_tag (pub_key);
+
+      assert (NULL != uncompressed.ptr);
+      assert (65 == uncompressed.len);
+
+      output_hex (stdout, uncompressed);
+      ci2c_free_octet_buffer (uncompressed);
       result = HASHLET_COMMAND_SUCCESS;
     }
   else
