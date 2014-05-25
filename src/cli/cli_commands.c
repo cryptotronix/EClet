@@ -28,8 +28,6 @@
 // for dev only
 #include "../driver/command.h"
 #include <libcrypti2c.h>
-#include "hash.h"
-
 
 static struct command commands[NUM_CLI_COMMANDS];
 
@@ -528,7 +526,7 @@ cli_ecc_sign (int fd, struct arguments *args)
     {
       /* Digest the file then proceed */
       struct ci2c_octet_buffer file_digest = {0,0};
-      file_digest = sha256 (f);
+      file_digest = ci2c_sha256 (f);
       close_input_file (args, f);
 
       ci2c_print_hex_string ("SHA256 file digest", file_digest.ptr, file_digest.len);
@@ -602,7 +600,7 @@ cli_ecc_verify (int fd, struct arguments *args)
         {
           /* Digest the file then proceed */
           struct ci2c_octet_buffer file_digest = {0,0};
-          file_digest = sha256 (f);
+          file_digest = ci2c_sha256 (f);
           close_input_file (args, f);
 
           ci2c_print_hex_string ("SHA256 file digest",

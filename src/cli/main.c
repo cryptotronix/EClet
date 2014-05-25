@@ -1,30 +1,29 @@
 /* -*- mode: c; c-file-style: "gnu" -*-
  * Copyright (C) 2013 Cryptotronix, LLC.
  *
- * This file is part of Hashlet.
+ * This file is part of EClet.
  *
- * Hashlet is free software: you can redistribute it and/or modify
+ * EClet is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
  * the Free Software Foundation, either version 3 of the License, or
  * any later version.
  *
- * Hashlet is distributed in the hope that it will be useful,
+ * EClet is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
  *
  * You should have received a copy of the GNU General Public License
- * along with Hashlet.  If not, see <http://www.gnu.org/licenses/>.
+ * along with EClet.  If not, see <http://www.gnu.org/licenses/>.
  *
  */
 
 /**
  * @file   main.c
  * @author Joshua Datko <jbd@cryptotronix.com>
- * @date   Thu Dec 26 14:48:23 2013
+ * @date   Sat May 24 20:47:39 2014
  *
- * @brief Entry point for the application.  Parses arguments and then
- * hands off the command to the dispatcher.
+ * @brief  Main entry point for EClet command line driver
  *
  *
  */

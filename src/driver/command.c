@@ -27,7 +27,6 @@
 #include <string.h>
 #include <libcrypti2c.h>
 #include "config.h"
-#include "../cli/hash.h"
 
 struct Command_ATSHA204 make_command ()
 {
@@ -1066,7 +1065,7 @@ struct ci2c_octet_buffer gen_temp_key_from_nonce (int fd, struct ci2c_octet_buff
                         data_to_hash.len);
 
 
-      result = sha256_buffer (data_to_hash);
+      result = ci2c_sha256_buffer (data_to_hash);
 
       ci2c_print_hex_string ("Nonce temp key", result.ptr,
                         result.len);
@@ -1134,7 +1133,7 @@ struct ci2c_octet_buffer gen_temp_key_from_digest (int fd,
 
   ci2c_print_hex_string ("Temp Key data to hash", data_to_hash.ptr, data_to_hash.len);
 
-  result = sha256_buffer (data_to_hash);
+  result = ci2c_sha256_buffer (data_to_hash);
 
   ci2c_print_hex_string ("Temp Key", result.ptr, result.len);
 
@@ -1200,7 +1199,7 @@ struct ci2c_octet_buffer mac_write (const struct ci2c_octet_buffer temp_key,
   ci2c_print_hex_string ("Write mac data to hash", data_to_hash.ptr,
                     data_to_hash.len);
 
-  struct ci2c_octet_buffer mac = sha256_buffer (data_to_hash);
+  struct ci2c_octet_buffer mac = ci2c_sha256_buffer (data_to_hash);
 
   ci2c_free_octet_buffer (zeros);
 

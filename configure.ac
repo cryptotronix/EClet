@@ -28,9 +28,7 @@ PKG_PROG_PKG_CONFIG
 PKG_CHECK_MODULES([DEPS], [crypti2c-0.1])
 #Check for libs
 have_gcrypt=no
-have_crypti2c=no
 AC_SEARCH_LIBS([gcry_md_open], [gcrypt], [have_gcrypt=yes])
-#AC_SEARCH_LIBS([CTX_LOG], [crypti2c], [have_crypti2c=yes])
 
 if test "x${have_gcrypt}" = xno; then
    AC_MSG_ERROR([
@@ -40,14 +38,6 @@ if test "x${have_gcrypt}" = xno; then
    rebuild to enable them.
    ----------------------------------------------------])
 fi
-
-dnl if test "x${have_crypti2c}" = xno; then
-dnl    AC_MSG_ERROR([
-dnl    ----------------------------------------------------
-dnl    libcrypti2c not install please install it
-dnl    ----------------------------------------------------])
-dnl fi
-
 
 AM_PROG_LEX
 AC_PROG_YACC
