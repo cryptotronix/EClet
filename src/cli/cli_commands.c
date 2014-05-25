@@ -28,12 +28,8 @@
 // for dev only
 #include "../driver/command.h"
 #include <libcrypti2c.h>
-
-#if HAVE_GCRYPT_H
 #include "hash.h"
-#else
-#define NO_GCRYPT "Rebuild with libgcrypt to enable this feature"
-#endif
+
 
 static struct command commands[NUM_CLI_COMMANDS];
 
@@ -378,39 +374,6 @@ int cli_get_otp_zone (int fd, struct arguments *args)
 
 }
 
-int
-cli_hash (int fd, struct arguments *args)
-{
-
-  struct ci2c_octet_buffer response;
-  int result = HASHLET_COMMAND_FAIL;
-  assert (NULL != args);
-
-#if HAVE_GCRYPT_H
-  FILE *f;
-  if ((f = get_input_file (args)) == NULL)
-    {
-      perror ("Failed to open file");
-    }
-  else
-    {
-      response = sha256 (f);
-      if (NULL != response.ptr)
-        {
-          output_hex (stdout, response);
-          ci2c_free_octet_buffer (response);
-          result = HASHLET_COMMAND_SUCCESS;
-        }
-
-      close_input_file (args, f);
-    }
-#else
-  printf ("%s\n", NO_GCRYPT);
-#endif
-
-  return result;
-}
-
 
 int
 cli_personalize (int fd, struct arguments *args)
@@ -427,214 +390,7 @@ cli_personalize (int fd, struct arguments *args)
 
 }
 
-void
-print_mac_result (FILE *fp,
-                  struct ci2c_octet_buffer challenge,
-                  struct ci2c_octet_buffer mac,
-                  struct ci2c_octet_buffer meta)
-{
-  assert (NULL != fp);
-  fprintf (fp, "%s : ", "mac      ");
-  output_hex (fp, mac);
 
-  fprintf (fp, "%s : ", "challenge");
-  output_hex (fp, challenge);
-
-  fprintf (fp, "%s : ", "meta     ");
-  output_hex (fp, meta);
-
-}
-
-int
-cli_mac (int fd, struct arguments *args)
-{
-  int result = HASHLET_COMMAND_FAIL;
-  assert (NULL != args);
-
-#if HAVE_GCRYPT_H
-  struct mac_response rsp;
-  struct ci2c_octet_buffer challenge;
-  FILE *f;
-  if ((f = get_input_file (args)) == NULL)
-    {
-      perror ("Failed to open file");
-    }
-  else
-    {
-      challenge = sha256 (f);
-      if (NULL != challenge.ptr)
-        {
-          rsp = perform_mac (fd, args->mac_mode,
-                             args->key_slot, challenge);
-
-          if (rsp.status)
-            {
-              print_mac_result (stdout, challenge, rsp.mac, rsp.meta);
-
-              ci2c_free_octet_buffer (rsp.mac);
-              ci2c_free_octet_buffer (rsp.meta);
-              result = HASHLET_COMMAND_SUCCESS;
-            }
-
-        ci2c_free_octet_buffer (challenge);
-      }
-
-      close_input_file (args, f);
-    }
-#else
-  printf ("%s\n", NO_GCRYPT);
-#endif
-
-  return result;
-}
-
-
-
-
-
-int
-cli_check_mac (int fd, struct arguments *args)
-{
-
-  int result = HASHLET_COMMAND_FAIL;
-  bool mac_cmp = false;
-  assert (NULL != args);
-
-  /* TODO: parse encoding from meta data */
-  struct check_mac_encoding cm = {0};
-
-  if (NULL == args->challenge)
-    fprintf (stderr, "%s\n", "Challenge can't be empty");
-  if (NULL == args->challenge_rsp)
-    fprintf (stderr, "%s\n", "Challenge Response can't be empty");
-  if (NULL == args->meta)
-    fprintf (stderr, "%s\n", "Meta data can't be empty");
-
-  if (NULL == args->challenge || NULL == args->challenge_rsp ||
-      NULL == args->meta)
-    return result;
-
-  struct ci2c_octet_buffer challenge = ci2c_ascii_hex_2_bin (args->challenge, 64);
-  struct ci2c_octet_buffer challenge_rsp = ci2c_ascii_hex_2_bin (args->challenge_rsp, 64);
-  struct ci2c_octet_buffer meta = ci2c_ascii_hex_2_bin (args->meta, 26);
-
-  mac_cmp = check_mac (fd,  cm, args->key_slot, challenge, challenge_rsp, meta);
-
-  ci2c_free_octet_buffer (challenge);
-  ci2c_free_octet_buffer (challenge_rsp);
-  ci2c_free_octet_buffer (meta);
-
-  if (mac_cmp)
-    result = HASHLET_COMMAND_SUCCESS;
-  else
-    fprintf (stderr, "%s\n", "Mac miscompare");
-
-  return result;
-
-
-}
-
-struct encrypted_write
-cli_mac_write (int fd, struct ci2c_octet_buffer data,
-               unsigned int slot, const char *ascii_key)
-{
-
-  struct encrypted_write result;
-
-  struct ci2c_octet_buffer key = {0,0};
-
-  if (NULL != ascii_key)
-    {
-      key = ci2c_ascii_hex_2_bin (ascii_key, 64);
-    }
-  else
-    {
-      CI2C_LOG (DEBUG, "Previous key value not provided");
-      return result;
-    }
-
-
-  struct ci2c_octet_buffer otp = get_otp_zone (fd);
-
-  struct ci2c_octet_buffer nonce = get_nonce (fd);
-
-  struct ci2c_octet_buffer nonce_temp_key = gen_temp_key_from_nonce (fd, nonce, otp);
-
-  assert (gen_digest (fd, DATA_ZONE, slot));
-
-  struct ci2c_octet_buffer temp_key = gen_temp_key_from_digest (fd, nonce_temp_key,
-                                                           slot, key);
-
-  result.encrypted = ci2c_xor_buffers (temp_key, key);
-
-  const uint8_t opcode = 0x12;
-  const uint8_t param1 = 0b10000010;
-  uint8_t param2[2] = {0};
-
-  param2[0] = slot_to_addr (DATA_ZONE, slot);
-  result.mac = mac_write (temp_key, opcode, param1, param2, data);
-
-  ci2c_print_hex_string ("OTP", otp.ptr, otp.len);
-
-  ci2c_free_octet_buffer (otp);
-  ci2c_free_octet_buffer (nonce);
-  ci2c_free_octet_buffer (nonce_temp_key);
-  ci2c_free_octet_buffer (temp_key);
-
-  return result;
-
-}
-
-int
-cli_write_to_key_slot (int fd, struct arguments *args)
-{
-
-  int result = HASHLET_COMMAND_FAIL;
-  assert (NULL != args);
-
-  const unsigned int ASCII_KEY_SIZE = 64;
-
-  struct ci2c_octet_buffer key = {0,0};
-
-  if (NULL == args->write_data)
-    fprintf (stderr, "%s\n" ,"Pass the key slot data in the -w option");
-
-  else
-    {
-      key = ci2c_ascii_hex_2_bin (args->write_data, ASCII_KEY_SIZE);
-      if (NULL != key.ptr)
-        {
-          struct encrypted_write write = cli_mac_write (fd, key, args->key_slot,
-                                                        args->challenge);
-
-          if (write.mac.ptr != NULL && write.encrypted.ptr != NULL &&
-              write32 (fd, DATA_ZONE,
-                       slot_to_addr (DATA_ZONE, args->key_slot),
-                       write.encrypted,
-                       &write.mac))
-            {
-              CI2C_LOG (DEBUG, "Write success");
-              result = HASHLET_COMMAND_SUCCESS;
-            }
-          else
-            fprintf (stderr, "%s\n" ,"Key slot can not be written.");
-
-          if (NULL != write.mac.ptr)
-            ci2c_free_octet_buffer (write.mac);
-          if (NULL != write.encrypted.ptr)
-            ci2c_free_octet_buffer (write.encrypted);
-
-          ci2c_free_octet_buffer (key);
-        }
-      else
-        {
-          fprintf (stderr, "%s\n" ,"Not a valid hex string");
-        }
-    }
-
-  return result;
-
-}
 
 int
 cli_read_key_slot (int fd, struct arguments *args)
@@ -775,15 +531,11 @@ cli_ecc_sign (int fd, struct arguments *args)
       if (NULL != file_digest.ptr)
         {
 
-          /* struct ci2c_octet_buffer blank_nonce = make_buffer (20); */
-          /* struct ci2c_octet_buffer temp_nonce = gen_nonce (fd, */
-          /*                                             blank_nonce); */
-
+          /* Forces a seed update on the RNG */
           struct ci2c_octet_buffer r = get_random (fd, true);
-          /* r = get_random (fd, true); */
-          /* r = get_random (fd, true); */
-          /* r = get_random (fd, false); */
 
+          /* Loading the nonce is the mechanism to load the SHA256
+             hash into the device */
           if (load_nonce (fd, file_digest))
             {
 
@@ -802,6 +554,7 @@ cli_ecc_sign (int fd, struct arguments *args)
 
             }
 
+          ci2c_free_octet_buffer (r);
         }
     }
   else
