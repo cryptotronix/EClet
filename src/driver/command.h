@@ -1,20 +1,20 @@
 /* -*- mode: c; c-file-style: "gnu" -*-
- * Copyright (C) 2013 Cryptotronix, LLC.
+ * Copyright (C) 2014 Cryptotronix, LLC.
  *
- * This file is part of Hashlet.
+ * This file is part of EClet.
  *
- * Hashlet is free software: you can redistribute it and/or modify
+ * EClet is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
  * the Free Software Foundation, either version 3 of the License, or
  * any later version.
  *
- * Hashlet is distributed in the hope that it will be useful,
+ * EClet is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
  *
  * You should have received a copy of the GNU General Public License
- * along with Hashlet.  If not, see <http://www.gnu.org/licenses/>.
+ * along with EClet.  If not, see <http://www.gnu.org/licenses/>.
  *
  */
 
@@ -155,96 +155,6 @@ set_config_zone (int fd);
  */
 bool
 set_otp_zone (int fd, struct ci2c_octet_buffer *otp_zone);
-/**
- * Structure to encode options for the MAC command.
- *
- */
-struct mac_mode_encoding
-{
-  bool use_serial_num;          /**< Use 48 bits of SN[2:3] and
-                                   SN[4:7], otherwise the messages
-                                   bits are zero */
-  bool use_otp_0_7;             /**< Include the OTP[0] through
-                                   OTP[7] otherwise set message bits
-                                   to 0.  Ignored if use_otp_0_10 is set */
-  bool use_otp_0_10;            /**< Use OPT[0] through OTP[10]
-                                   otherwise use zeros */
-  bool temp_key_source_flag;    /**< If use_first_32 or use_second is
-                                   set, this value must match the
-                                   value in TempKey.SourceFlag register */
-  bool use_first_32_temp_key;   /**< If set, fill the values with the
-                                   first 32 bytes of TempKey.
-                                   Otherwise, the first 32 bytes are
-                                   loaded from one of the data slots. */
-  bool use_second_32_temp_key;  /**< If set, the second 32 byres are
-                                   loaded from the value in TempKey.
-                                   Otherwise, they are loaded from
-                                   the challenge parameter */
-};
-
-
-struct check_mac_encoding
-{
-  bool use_challenge;           /**< Set to true if using the
-                                   challenge in the check mac
-                                   operation.  Otherwise it will use TempKey. */
-  bool use_slot_id;             /**< Set to true if the first 32
-                                   bytes of the message are from a
-                                   slot ID, otherwise they are from
-                                   temp Key */
-  bool use_otp_zone;            /**< Set to true if using 8 bytes
-                                   from the OTP zone, otherwise
-                                   zeroes are used. */
-  bool temp_key;                /**< If TempKey is used it must match
-                                   TempKey.SourceFlag
-                                */
-
-};
-
-/**
- * Encode the check mac options
- *
- * @param c The check mac options
- *
- * @return The encoded value
- */
-uint8_t
-serialize_check_mac_mode (struct check_mac_encoding c);
-
-/**
- * Encode the MAC commands mode options.
- *
- * @param m The mac mode encoding struct to serialize.
- *
- * @return A byte that contains the encoded MAC command mode encodings.
- */
-uint8_t
-serialize_mac_mode (struct mac_mode_encoding m);
-
-struct mac_response
-{
-  bool status;                  /**< The status of the mac response */
-  struct ci2c_octet_buffer mac;      /**< The 32 byte MAC response */
-  struct ci2c_octet_buffer meta;     /**< The 13 byte meta data, needed
-                                   for check mac commands */
-};
-
-/**
- *
- *
- * @param fd The file descriptor to which to write.
- * @param m The MAC command mode options.
- * @param data_slot The data slot (0-15) to be used in the MAC.
- * @param challenge If use_second_32_temp_key is false, include a 32
- * byte challenge.  Otherwise, ignored
- *
- * @return If the Mac_response status is true, ti returns malloc'd
- * buffers of the mac and meta data.
- */
-struct
-mac_response perform_mac (int fd, struct mac_mode_encoding m,
-                          unsigned int data_slot,
-                          struct ci2c_octet_buffer challenge);
 
 /**
  *
@@ -352,39 +262,6 @@ enum DEVICE_STATE
 get_device_state (int fd);
 
 /**
- * Generates the "other data" as its known in the data sheet that is
- * used in the check mac command.
- *
- * @param fd the open file descriptor
- * @param m The same mac mode encoding used to produced the mac
- * @param data_slot the same data slot (key) used in the mac
- *
- * @return the serialized, malloc'd, meta data.  Buf.ptr will be null on error.
- */
-struct ci2c_octet_buffer
-get_check_mac_meta_data (int fd, struct mac_mode_encoding m,
-                         unsigned int data_slot);
-
-/**
- * Performs the check mac operation
- *
- * @param fd the open file descriptor
- * @param cm The encoding of the check mac options
- * @param data_slot the data slot used for the mac (key slot)
- * @param challenge the challenge sent to the mac command
- * @param challenge_response the response generated from the mac command
- * @param other_data The other meta data generated from get_check_mac_meta_data
- *
- * @return True if a match, otherwise false
- */
-bool
-check_mac (int fd, struct check_mac_encoding cm,
-           unsigned int data_slot,
-           struct ci2c_octet_buffer challenge,
-           struct ci2c_octet_buffer challenge_response,
-           struct ci2c_octet_buffer other_data);
-
-/**
  * Converts the slot number to the correct address byte
  *
  * @param zone The zone enumeration
@@ -395,70 +272,6 @@ check_mac (int fd, struct check_mac_encoding cm,
 uint8_t
 slot_to_addr (enum DATA_ZONE zone, uint8_t slot);
 
-/**
- * Calculate the temp key register from the random number produced by
- * the nonce command.
- *
- * @param fd the open file descriptor
- * @param random The random number returned from get_nonce.
- * @param otp The otp zone contents
- *
- * @return A 32 byte digest matching temp_key or a empty octet buffer.
- */
-struct ci2c_octet_buffer
-gen_temp_key_from_nonce (int fd,
-                         const struct ci2c_octet_buffer random,
-                         const struct ci2c_octet_buffer otp);
-
-/**
- * Calculates the mac needed for a key slot write.
- *
- * @param temp_key The internal value of temp_key.
- * @param opcode The opcdoe
- * @param param1 param1
- * @param param2 param2
- * @param data the data to be written
- *
- * @return the mac over the above data
- */
-struct ci2c_octet_buffer
-mac_write (const struct ci2c_octet_buffer temp_key,
-           uint8_t opcode,
-           uint8_t param1, const uint8_t *param2,
-           const struct ci2c_octet_buffer data);
-
-/**
- * Generates an internal digest in the chip, into temp key.  Temp key
- * must be valid (via an nonce command or something similar) prior to
- * running this command.
- *
- * @param fd The open file descriptor.
- * @param zone If Config or OTP, then slot can be either 0 or 1 to
- * indicate either the first or second 256 bit zone.  If Data zone,
- * then slot refers to the data slot.
- * @param slot The slot according to the zone
- *
- * @return true if the digest is set in temp_key
- */
-bool
-gen_digest (int fd, enum DATA_ZONE zone, unsigned int slot);
-
-/**
- * Calculates the value of temp key from the gendig command.
- *
- * @param fd The open file descriptor
- * @param prev_temp_key The current value of tempkey prior to running
- * the gendig command
- * @param slot the slot to use
- * @param key the key (data) in the corresponding slot
- *
- * @return the calculated value of temp key
- */
-struct ci2c_octet_buffer
-gen_temp_key_from_digest (int fd,
-                          const struct ci2c_octet_buffer prev_temp_key,
-                          unsigned int slot,
-                          const struct ci2c_octet_buffer key);
 
 struct ci2c_octet_buffer
 gen_ecc_key (int fd, uint8_t key_id, bool private);

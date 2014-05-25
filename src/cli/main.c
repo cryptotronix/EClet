@@ -33,6 +33,7 @@
 #include "cli_commands.h"
 #include "config.h"
 #include <string.h>
+#include <libcrypti2c.h>
 
 const char *argp_program_version = PACKAGE_VERSION;
 

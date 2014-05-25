@@ -1,20 +1,20 @@
 /* -*- mode: c; c-file-style: "gnu" -*-
- * Copyright (C) 2013 Cryptotronix, LLC.
+ * Copyright (C) 2014 Cryptotronix, LLC.
  *
- * This file is part of Hashlet.
+ * This file is part of EClet.
  *
- * Hashlet is free software: you can redistribute it and/or modify
+ * EClet is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
  * the Free Software Foundation, either version 3 of the License, or
  * any later version.
  *
- * Hashlet is distributed in the hope that it will be useful,
+ * EClet is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
  *
  * You should have received a copy of the GNU General Public License
- * along with Hashlet.  If not, see <http://www.gnu.org/licenses/>.
+ * along with EClet.  If not, see <http://www.gnu.org/licenses/>.
  *
  */
 
@@ -22,10 +22,10 @@
 #define CLI_COMMANDS_H
 
 #include <stdbool.h>
-#include "../driver/hashlet.h"
 #include <stdio.h>
 #include <stdint.h>
 #include <stdlib.h>
+#include <libcrypti2c.h>
 
 #define NUM_ARGS 1
 
@@ -46,7 +46,6 @@ struct arguments
   char *input_file;
   unsigned int key_slot;
   bool test;
-  struct mac_mode_encoding mac_mode;
   uint8_t address;
   const char *challenge;
   const char *challenge_rsp;

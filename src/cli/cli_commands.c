@@ -1,20 +1,20 @@
 /* -*- mode: c; c-file-style: "gnu" -*-
- * Copyright (C) 2013 Cryptotronix, LLC.
+ * Copyright (C) 2014 Cryptotronix, LLC.
  *
- * This file is part of Hashlet.
+ * This file is part of EClet.
  *
- * Hashlet is free software: you can redistribute it and/or modify
+ * EClet is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
  * the Free Software Foundation, either version 3 of the License, or
  * any later version.
  *
- * Hashlet is distributed in the hope that it will be useful,
+ * EClet is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
  *
  * You should have received a copy of the GNU General Public License
- * along with Hashlet.  If not, see <http://www.gnu.org/licenses/>.
+ * along with EClet.  If not, see <http://www.gnu.org/licenses/>.
  *
  */
 
@@ -43,14 +43,6 @@ set_defaults (struct arguments *args)
   args->input_file = NULL;
   args->update_seed = false;
   args->key_slot = 0;
-
-  /* Default MAC mode */
-  args->mac_mode.use_serial_num = false;
-  args->mac_mode.use_otp_0_7 = false;
-  args->mac_mode.use_otp_0_10 = false;
-  args->mac_mode.temp_key_source_flag = false;
-  args->mac_mode.use_first_32_temp_key = false;
-  args->mac_mode.use_second_32_temp_key = false;
 
   args->challenge = NULL;
   args->challenge_rsp = NULL;
@@ -191,12 +183,12 @@ dispatch (const char *command, struct arguments *args)
         {
           result = (*cmd->func)(fd, args);
         }
-      else if ((fd = hashlet_setup (bus, args->address)) < 0)
+      else if ((fd = ci2c_atmel_setup (bus, args->address)) < 0)
         perror ("Failed to setup the hashlet");
       else
         {
           result = (*cmd->func)(fd, args);
-          hashlet_teardown (fd);
+          ci2c_atmel_teardown (fd);
         }
 
 
