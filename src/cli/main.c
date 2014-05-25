@@ -163,7 +163,7 @@ parse_opt (int key, char *arg, struct argp_state *state)
       arguments->signature = arg;
       break;
     case OPT_PUB_KEY:
-      if (!is_hex_arg (arg, 128))
+      if (!is_hex_arg (arg, 130))
         {
           fprintf (stderr, "%s\n", "Invalid P256 Public Key.");
           argp_usage (state);

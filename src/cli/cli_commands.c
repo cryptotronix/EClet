@@ -650,6 +650,7 @@ cli_ecc_verify (int fd, struct arguments *args)
 int
 cli_ecc_offline_verify (int fd, struct arguments *args)
 {
+
   int result = HASHLET_COMMAND_FAIL;
   assert (NULL != args);
 
@@ -670,7 +671,7 @@ cli_ecc_offline_verify (int fd, struct arguments *args)
       signature = ci2c_ascii_hex_2_bin (args->signature, 128);
       ci2c_print_hex_string ("Signature", signature.ptr, signature.len);
 
-      pub_key = ci2c_ascii_hex_2_bin (args->pub_key, 128);
+      pub_key = ci2c_ascii_hex_2_bin (args->pub_key, 130);
       ci2c_print_hex_string ("Public Key", pub_key.ptr, pub_key.len);
 
       if ((f = get_input_file (args)) != NULL)

@@ -296,5 +296,7 @@ cli_get_pub_key (int fd, struct arguments *args);
 int
 cli_ecc_offline_verify (int fd, struct arguments *args);
 
+
+
 int cli_dev (int fd, struct arguments *args);
 #endif /* CLI_COMMANDS_H */
