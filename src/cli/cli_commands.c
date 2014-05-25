@@ -56,6 +56,7 @@ set_defaults (struct arguments *args)
 
   args->challenge = NULL;
   args->challenge_rsp = NULL;
+  args->signature = NULL;
   args->meta = NULL;
   args->write_data = NULL;
 
@@ -126,6 +127,8 @@ init_cli (struct arguments *args)
   static const struct command dev_cmd = {"dev", cli_dev };
   static const struct command gen_key = {"gen-key", cli_gen_key };
   static const struct command ecc_sign_cmd = {"sign", cli_ecc_sign };
+  static const struct command ecc_verify_cmd = {"verify", cli_ecc_verify };
+  static const struct command ecc_get_pub_cmd = {"get-pub", cli_get_pub_key };
   int x = 0;
 
   x = add_command (random_cmd, x);
@@ -138,6 +141,8 @@ init_cli (struct arguments *args)
   x = add_command (dev_cmd, x);
   x = add_command (gen_key, x);
   x = add_command (ecc_sign_cmd, x);
+  x = add_command (ecc_verify_cmd, x);
+  x = add_command (ecc_get_pub_cmd, x);
 
   set_defaults (args);
 
@@ -564,4 +569,103 @@ cli_ecc_sign (int fd, struct arguments *args)
 
 
   return result;
+}
+
+
+int
+cli_ecc_verify (int fd, struct arguments *args)
+{
+  int result = HASHLET_COMMAND_FAIL;
+  assert (NULL != args);
+
+  FILE *f = NULL;
+  struct ci2c_octet_buffer signature = {0,0};
+  struct ci2c_octet_buffer pub_key = {0,0};
+
+  if (NULL == args->signature)
+    {
+      perror ("Signature required");
+    }
+  else if (NULL == args->pub_key)
+    {
+      perror ("Public Key required");
+    }
+  else
+    {
+      signature = ci2c_ascii_hex_2_bin (args->signature, 128);
+      ci2c_print_hex_string ("Signature", signature.ptr, signature.len);
+
+      pub_key = ci2c_ascii_hex_2_bin (args->pub_key, 128);
+      ci2c_print_hex_string ("Public Key", pub_key.ptr, pub_key.len);
+
+      if ((f = get_input_file (args)) != NULL)
+        {
+          /* Digest the file then proceed */
+          struct ci2c_octet_buffer file_digest = {0,0};
+          file_digest = sha256 (f);
+          close_input_file (args, f);
+
+          ci2c_print_hex_string ("SHA256 file digest",
+                                 file_digest.ptr,
+                                 file_digest.len);
+
+          if (NULL != file_digest.ptr)
+            {
+
+              /* Loading the nonce is the mechanism to load the SHA256
+                 hash into the device */
+              if (load_nonce (fd, file_digest))
+                {
+
+                  if (ecc_verify (fd, pub_key, signature))
+                    {
+                      result = HASHLET_COMMAND_SUCCESS;
+                    }
+                  else
+                    {
+                      fprintf (stderr, "%s\n", "Verify Command failed.");
+                    }
+
+                }
+
+            }
+
+          ci2c_free_octet_buffer (file_digest);
+
+        }
+      else
+        {
+          /* temp_key_loaded already false */
+        }
+
+      ci2c_free_octet_buffer (pub_key);
+      ci2c_free_octet_buffer (signature);
+    }
+
+  return result;
+}
+
+
+int
+cli_get_pub_key (int fd, struct arguments *args)
+{
+
+  int result = HASHLET_COMMAND_FAIL;
+  assert (NULL != args);
+
+  struct ci2c_octet_buffer pub_key = gen_ecc_key (fd, args->key_slot, false);
+
+  if (NULL != pub_key.ptr)
+    {
+      output_hex (stdout, pub_key);
+      ci2c_free_octet_buffer (pub_key);
+      result = HASHLET_COMMAND_SUCCESS;
+    }
+  else
+    {
+      fprintf (stderr, "%s\n", "Get Pub key command failed");
+    }
+
+  return result;
+
 }

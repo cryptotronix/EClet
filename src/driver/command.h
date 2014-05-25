@@ -469,4 +469,20 @@ ecc_sign (int fd, uint8_t key_id);
 bool
 load_nonce (int fd, struct ci2c_octet_buffer data);
 
+/**
+ * Verifies an ECDSA Signature. Requires that the data, which was
+ * signed, was first loaded with the nonce command.
+ *
+ * @param fd The open file descriptor.
+ * @param pub_key The Public Key matching the private key that signed
+ * the data.
+ * @param signature The resultant signature.
+ *
+ * @return True if the signature is valid otherwise false
+ */
+bool
+ecc_verify (int fd,
+            struct ci2c_octet_buffer pub_key,
+            struct ci2c_octet_buffer signature);
+
 #endif /* COMMAND_H */

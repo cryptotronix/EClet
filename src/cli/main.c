@@ -48,34 +48,12 @@ static char doc[] =
   "                  ~/.hashlet as a backup\n"
   "random        --  Retrieves 32 bytes of random data from the device.\n"
   "serial-num    --  Retrieves the device's serial number.\n"
-#if HAVE_GCRYPT_H
-  "mac           --  Calculates a SHA-256 digest of your input data and then\n"
-  "                  sends that digest to the device to be mac'ed with a key\n"
-  "                  other internal data\n"
-  "offline-verify -- Offline verify will compute a MAC in the same manner as\n"
-  "                  the Hashlet, but the physical device is not needed.\n"
-  "                  It compares the challenge response with the offline\n"
-  "                  challenge.\n"
-  "                  Returns an exit code of 0 if successful, otherwise prints\n"
-  "                  an error.\n"
-  "                  The example incantation is:\n"
-  "                  hashlet /dev/null offline-verify -c XXX... -r XXX...\n"
-#endif
   "get-config    --  Dumps the configuration zone\n"
   "state         --  Returns the device's state.\n"
   "                  Factory -- Random will produced a fixed 0xFFFF0000\n"
   "                  Initialized -- Configuration is locked, keys may be \n"
   "                                 written\n"
   "                  Personalized -- Keys are loaded.  Memory is locked\n"
-  "write         --  Writes to one of the sixteen key slots, specified by\n"
-  "                  the option -k.  If key slot is not specified, key slot\n"
-  "                  zero is assumed.  NOTE: not all slots may be written and\n"
-  "                  this command may result in an error.  Check the\n"
-  "                  documentation for which slots may be written.\n"
-  "read          --  Reads one of the sixteen key slots, specified by\n"
-  "                  the option -k.  The default slot is 0.  Some slots can\n"
-  "                  not be read, in which case this command will return an\n"
-  "                  error.  Otherwise it will return the 32 Byte value.\n"
   "nonce         --  Generates a nonce and loads the value inside the internal\n"
   "                  tempkey register.  The value that will be return is the\n"
   "                  32 byte random number, which constitutes part of the nonce\n";
@@ -85,7 +63,8 @@ static char doc[] =
 static char args_doc[] = "command";
 
 #define OPT_UPDATE_SEED 300
-
+#define OPT_SIGNATURE 301
+#define OPT_PUB_KEY 302
 
 /* The options we understand. */
 static struct argp_option options[] = {
@@ -96,6 +75,10 @@ static struct argp_option options[] = {
   {"bus",      'b', "BUS",  0,  "I2C bus: defaults to /dev/i2c-1"},
   {"address",  'a', "ADDRESS",      0,  "i2c address for the device (in hex)"},
   {"file",     'f', "FILE",         0,  "Read from FILE vs. stdin"},
+  { 0, 0, 0, 0, "Sign and Verify Operations:", 1},
+  {"signature", OPT_SIGNATURE, "SIGNATURE", 0, "The signature to be verified"},
+  {"public-key", OPT_PUB_KEY, "PUBLIC_KEY", 0,
+   "The public key that produced the signature"},
   { 0, 0, 0, 0, "Random Command Options:", 2},
   {"update-seed", OPT_UPDATE_SEED, 0, 0,
      "Updates the random seed.  Only applicable to certain commands"},
@@ -168,6 +151,24 @@ parse_opt (int key, char *arg, struct argp_state *state)
         }
       else
         arguments->challenge = arg;
+      break;
+    case OPT_SIGNATURE:
+      if (!is_hex_arg (arg, 128))
+        {
+          fprintf (stderr, "%s\n", "Invalid P256 Signature.");
+          argp_usage (state);
+        }
+      else
+      arguments->signature = arg;
+      break;
+    case OPT_PUB_KEY:
+      if (!is_hex_arg (arg, 128))
+        {
+          fprintf (stderr, "%s\n", "Invalid P256 Public Key.");
+          argp_usage (state);
+        }
+      else
+        arguments->pub_key = arg;
       break;
     case 'w':
       if (!is_hex_arg (arg, 64))

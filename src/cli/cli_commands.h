@@ -50,6 +50,8 @@ struct arguments
   uint8_t address;
   const char *challenge;
   const char *challenge_rsp;
+  const char *signature;
+  const char *pub_key;
   const char *meta;
   const char *write_data;
   const char *bus;
@@ -258,6 +260,30 @@ struct encrypted_write cli_mac_write (int fd, struct ci2c_octet_buffer data,
 
 int cli_gen_key (int fd, struct arguments *args);
 int cli_ecc_sign (int fd, struct arguments *args);
+
+/**
+ * Verifies an ECC Signature. The signature option is required to
+ * provide the signature.
+ *
+ * @param fd The open file descriptor
+ * @param args The arguments
+ *
+ * @return Success if the signature verified, otherwise error
+ */
+
+int
+cli_ecc_verify (int fd, struct arguments *args);
+
+/**
+ * Retrieve the public key from an ECC private key slot.
+ *
+ * @param fd The open file descriptor.
+ * @param args The arguments, the key slot specifies the key.
+ *
+ * @return Success or failure code
+ */
+int
+cli_get_pub_key (int fd, struct arguments *args);
 
 int cli_dev (int fd, struct arguments *args);
 #endif /* CLI_COMMANDS_H */

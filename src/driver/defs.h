@@ -37,6 +37,7 @@
 #define COMMAND_WRITE           0x12
 #define COMMAND_GEN_KEY         0x40
 #define COMMAND_ECC_SIGN        0x41
+#define COMMAND_ECC_VERIFY      0x45
 
 /* Command responses */
 #define SUCCESS_RESPONSE        0x00
@@ -80,6 +81,7 @@
 #define RANDOM_AVG_EXEC 11000000
 #define GEN_KEY_AVG_EXEC 9000000
 #define ECC_SIGN_AVG_EXEC 33000000
+#define ECC_VERYFY_AVG_EXEC 36000000
 
 #define DERIVE_KEY_MAX_EXEC 62000000
 #define DEV_REV_MAX_EXEC 2000000
@@ -96,5 +98,6 @@
 #define WRITE_MAX_EXEC    42000000
 #define GEN_KEY_MAX_EXEC  96000000
 #define ECC_SIGN_MAX_EXEC 38000000
+#define ECC_VERIFY_MAX_EXEC 73000000
 
 #endif /* DEFS_H */

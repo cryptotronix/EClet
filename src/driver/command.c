@@ -152,6 +152,9 @@ void print_command (struct Command_ATSHA204 *c)
     case COMMAND_ECC_SIGN:
       opcode = "Command ECC Sign Key";
       break;
+    case COMMAND_ECC_VERIFY:
+      opcode = "Command ECC Verify";
+      break;
     default:
       assert (false);
     }
@@ -1340,6 +1343,58 @@ struct ci2c_octet_buffer ecc_sign (int fd, uint8_t key_id)
     }
 
   return signature;
+
+
+}
+
+
+bool
+ecc_verify (int fd,
+            struct ci2c_octet_buffer pub_key,
+            struct ci2c_octet_buffer signature)
+{
+
+  assert (NULL != signature.ptr);
+  assert (64 <= signature.len); /* P256 signatures are 64 bytes */
+
+  assert (NULL != pub_key.ptr);
+  assert (64 <= pub_key.len); /* P256 Public Keys are 64 bytes */
+
+  uint8_t param2[2] = {0};
+  uint8_t param1 = 0x02; /* Currently only support external keys */
+
+  param2[0] = 0x04; /* Currently only support P256 Keys */
+
+  struct ci2c_octet_buffer payload =
+    ci2c_make_buffer (signature.len + pub_key.len);
+
+  memcpy (payload.ptr, signature.ptr, signature.len);
+  memcpy (payload.ptr + signature.len, pub_key.ptr, pub_key.len);
+
+  uint8_t result = 0xFF;
+  bool verified = false;
+
+  struct Command_ATSHA204 c = make_command ();
+
+  set_opcode (&c, COMMAND_ECC_VERIFY);
+  set_param1 (&c, param1);
+  set_param2 (&c, param2);
+  set_data (&c, payload.ptr, payload.len);
+  set_execution_time (&c, 0, ECC_VERIFY_MAX_EXEC);
+
+  if (RSP_SUCCESS == ci2c_process_command (fd, &c, &result, sizeof(result)))
+    {
+      CI2C_LOG (DEBUG, "Verify success");
+      verified = true;
+    }
+  else
+    {
+      CI2C_LOG (DEBUG, "Verify failure");
+    }
+
+  ci2c_free_octet_buffer (payload);
+
+  return verified;
 
 
 }
