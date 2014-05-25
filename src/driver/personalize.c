@@ -98,29 +98,6 @@ enum DEVICE_STATE personalize (int fd, enum DEVICE_STATE goal,
                                struct key_container *keys)
 {
 
-  /* if (set_config_zone (fd)) */
-  /*   { */
-  /*     printf ("Config zone set\n"); */
-  /*     if (lock_config_zone (fd, state)) */
-  /*       printf ("Locked"); */
-  /*   } */
-
-  /* struct ci2c_octet_buffer otp_zone; */
-  /* if (set_otp_zone (fd, &otp_zone)) */
-  /*   { */
-  /*     if (lock (fd, DATA_ZONE, 0)) */
-  /*       { */
-  /*         state = STATE_PERSONALIZED; */
-  /*         assert (get_device_state (fd) == state); */
-
-  /*         pub_key = gen_ecc_key (fd, args->key_slot, true); */
-
-  /*         print_hex_string ("Pub key", pub_key.ptr, pub_key.len); */
-  /*       } */
-
-  /*   } */
-
-
   enum DEVICE_STATE state = get_device_state (fd);
 
   if (state >= goal)
@@ -133,6 +110,7 @@ enum DEVICE_STATE personalize (int fd, enum DEVICE_STATE goal,
 
       struct ci2c_octet_buffer otp_zone;
       if (set_otp_zone (fd, &otp_zone))
+        #warning Need to CRC zone prior to locking!
         {
           /* struct ci2c_octet_buffer data_zone; */
           /* if (write_keys (fd, keys, &data_zone)) */
