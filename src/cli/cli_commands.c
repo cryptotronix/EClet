@@ -415,6 +415,11 @@ cli_gen_key (int fd, struct arguments *args)
 
   struct ci2c_octet_buffer pub_key = gen_ecc_key (fd, args->key_slot, true);
 
+  /* There appears to be a bug on the chip where generate one key sets
+  the updateCount in such a way that signatures fail. The interim fix
+  is to generate two keys and discard the first. */
+  pub_key = gen_ecc_key (fd, args->key_slot, true);
+
   if (NULL != pub_key.ptr)
     {
       struct ci2c_octet_buffer uncompressed =
