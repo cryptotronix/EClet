@@ -28,6 +28,7 @@ if [ $HAVE_CRYPTI2C -eq 0 ]; then
 else
     git clone https://github.com/cryptotronix/libcrypti2c.git
     cd libcrypti2c
+    git checkout 0.1
     ./autogen.sh
     echo Enter password to install libcrypti2c library
     sudo make install
