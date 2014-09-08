@@ -21,8 +21,6 @@
 #ifndef PERSONALIZE_H
 #define PERSONALIZE_H
 
-#include "defs.h"
-#include "command.h"
 #include <libcrypti2c.h>
 
 struct key_container

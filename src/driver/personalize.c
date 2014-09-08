@@ -18,7 +18,6 @@
  *
  */
 
-#include "command.h"
 #include <assert.h>
 #include <stdio.h>
 #include <unistd.h>
@@ -98,7 +97,7 @@ enum DEVICE_STATE personalize (int fd, enum DEVICE_STATE goal,
                                struct key_container *keys)
 {
 
-  enum DEVICE_STATE state = get_device_state (fd);
+  enum DEVICE_STATE state = ci2c_get_device_state (fd);
 
   if (state >= goal)
     return state;
@@ -106,7 +105,7 @@ enum DEVICE_STATE personalize (int fd, enum DEVICE_STATE goal,
   if (set_config_zone (fd) && lock_config_zone (fd, state))
     {
       state = STATE_INITIALIZED;
-      assert (get_device_state (fd) == state);
+      assert (ci2c_get_device_state (fd) == state);
 
       struct ci2c_octet_buffer otp_zone;
       if (set_otp_zone (fd, &otp_zone))
@@ -129,7 +128,7 @@ enum DEVICE_STATE personalize (int fd, enum DEVICE_STATE goal,
               if (lock (fd, DATA_ZONE, 0))
                 {
                   state = STATE_PERSONALIZED;
-                  assert (get_device_state (fd) == state);
+                  assert (ci2c_get_device_state (fd) == state);
                 }
 
           ci2c_free_octet_buffer (otp_zone);

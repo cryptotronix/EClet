@@ -23,7 +23,6 @@
 #include <stdio.h>
 #include <string.h>
 #include <libcrypti2c.h>
-#include "command.h"
 #include <stdlib.h>
 
 struct slot_config make_ecc_key_slot_config ()
@@ -417,7 +416,7 @@ bool set_key_config (int fd)
 
   struct ci2c_octet_buffer to_write = { key_config, sizeof(key_config)};
 
-  return write32 (fd, CONFIG_ZONE, key_config_addr, to_write, NULL);
+  return ci2c_write32_cmd (fd, key_config_addr, to_write, NULL);
 
 }
 
@@ -426,7 +425,7 @@ bool set_config_zone (int fd)
 {
   bool result = false;
 
-  if (is_config_locked (fd))
+  if (ci2c_is_config_locked (fd))
     return true;
 
   enum config_slots slots[CONFIG_SLOTS_NUM_SLOTS] = {slot0, slot2, slot4,

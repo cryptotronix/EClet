@@ -297,7 +297,7 @@ cli_get_state (int fd, struct arguments *args)
   int result = HASHLET_COMMAND_SUCCESS;
   const char *state = "";
 
-  switch (get_device_state (fd))
+  switch (ci2c_get_device_state (fd))
     {
     case STATE_FACTORY:
       state = "Factory";
@@ -345,7 +345,7 @@ int cli_get_otp_zone (int fd, struct arguments *args)
   int result = HASHLET_COMMAND_FAIL;
   assert (NULL != args);
 
-  if (STATE_PERSONALIZED != get_device_state (fd))
+  if (STATE_PERSONALIZED != ci2c_get_device_state (fd))
     {
       fprintf (stderr, "%s\n" ,"Can only read OTP zone when personalized");
       return result;
@@ -413,12 +413,14 @@ cli_gen_key (int fd, struct arguments *args)
   int result = HASHLET_COMMAND_FAIL;
   assert (NULL != args);
 
-  struct ci2c_octet_buffer pub_key = gen_ecc_key (fd, args->key_slot, true);
+  struct ci2c_octet_buffer pub_key = ci2c_gen_ecc_key (fd,
+                                                       args->key_slot,
+                                                       true);
 
   /* There appears to be a bug on the chip where generate one key sets
   the updateCount in such a way that signatures fail. The interim fix
   is to generate two keys and discard the first. */
-  pub_key = gen_ecc_key (fd, args->key_slot, true);
+  pub_key = ci2c_gen_ecc_key (fd, args->key_slot, true);
 
   if (NULL != pub_key.ptr)
     {
@@ -472,7 +474,7 @@ cli_ecc_sign (int fd, struct arguments *args)
           if (load_nonce (fd, file_digest))
             {
 
-              struct ci2c_octet_buffer rsp = ecc_sign (fd, args->key_slot);
+              struct ci2c_octet_buffer rsp = ci2c_ecc_sign (fd, args->key_slot);
 
               if (NULL != rsp.ptr)
                 {
@@ -549,7 +551,7 @@ cli_ecc_verify (int fd, struct arguments *args)
                      point format tag */
                   pub_key.ptr = pub_key.ptr + 1;
                   pub_key.len = pub_key.len - 1;
-                  if (ecc_verify (fd, pub_key, signature))
+                  if (ci2c_ecc_verify (fd, pub_key, signature))
                     {
                       result = HASHLET_COMMAND_SUCCESS;
 
@@ -659,7 +661,9 @@ cli_get_pub_key (int fd, struct arguments *args)
   int result = HASHLET_COMMAND_FAIL;
   assert (NULL != args);
 
-  struct ci2c_octet_buffer pub_key = gen_ecc_key (fd, args->key_slot, false);
+  struct ci2c_octet_buffer pub_key = ci2c_gen_ecc_key (fd,
+                                                       args->key_slot,
+                                                       false);
 
   if (NULL != pub_key.ptr)
     {
