@@ -416,7 +416,7 @@ bool set_key_config (int fd)
 
   struct ci2c_octet_buffer to_write = { key_config, sizeof(key_config)};
 
-  return ci2c_write32_cmd (fd, key_config_addr, to_write, NULL);
+  return ci2c_write32_cmd (fd, CONFIG_ZONE, key_config_addr, to_write, NULL);
 
 }
 
