@@ -26,6 +26,9 @@
 #include "config.h"
 #include "../driver/personalize.h"
 #include <libcrypti2c.h>
+#include <sys/types.h>
+#include <sys/stat.h>
+#include <fcntl.h>
 
 static struct command commands[NUM_CLI_COMMANDS];
 
@@ -46,7 +49,7 @@ set_defaults (struct arguments *args)
   args->write_data = NULL;
 
   args->address = 0x60;
-  args->bus = "/dev/i2c-1";
+  args->bus = "/dev/atsha0";
 
 
 }
@@ -180,12 +183,12 @@ dispatch (const char *command, struct arguments *args)
         {
           result = (*cmd->func)(fd, args);
         }
-      else if ((fd = ci2c_atmel_setup (bus, args->address)) < 0)
+      else if ((fd = open (bus, O_RDWR)) < 0)
         perror ("Failed to setup the device");
       else
         {
           result = (*cmd->func)(fd, args);
-          ci2c_atmel_teardown (fd);
+          close (fd);
         }
 
 
