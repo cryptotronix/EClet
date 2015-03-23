@@ -58,6 +58,10 @@ eclet personalize
 
 This is the second command you should run.  On success it will not output anything. It configures all slots (0-16) to be holders for P-256 ECC private keys, except slot 8, which is reserved for future use. Keys are not generated at this time. Each key must be individually generated with the `gen-key` command.
 
+***WARNING***
+
+Until you personalize your device, the random number generator will produce a fixed test patterns of FFs and 00s. This is by design. However, it can be a bit suprising to see if you aren't expecting it.
+
 ### random
 ```bash
 eclet random
