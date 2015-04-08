@@ -49,8 +49,11 @@ set_defaults (struct arguments *args)
   args->write_data = NULL;
 
   args->address = 0x60;
+#ifdef USE_KERNEL
   args->bus = "/dev/atsha0";
-
+#else
+  args->bus = "/dev/i2c-1";
+#endif
 
 }
 
@@ -183,12 +186,20 @@ dispatch (const char *command, struct arguments *args)
         {
           result = (*cmd->func)(fd, args);
         }
+#ifdef USE_KERNEL
       else if ((fd = open (bus, O_RDWR)) < 0)
+#else
+      else if ((fd = lca_atmel_setup (bus, args->address)) < 0)
+#endif
         perror ("Failed to setup the device");
       else
         {
           result = (*cmd->func)(fd, args);
+#ifdef USE_KERNEL
           close (fd);
+#else
+          lca_atmel_teardown (fd);
+#endif
         }
 
 
