@@ -3,5 +3,5 @@ compiler:
   - gcc
   - clang
 # Change this to your needs
-before_install: sudo apt-get install texinfo
+before_install: sudo apt-get install texinfo libxml2-dev
 script: ./autogen.sh
