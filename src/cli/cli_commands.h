@@ -25,7 +25,7 @@
 #include <stdio.h>
 #include <stdint.h>
 #include <stdlib.h>
-#include <libcrypti2c.h>
+#include <libcryptoauth.h>
 
 #define NUM_ARGS 1
 
@@ -73,7 +73,7 @@ struct command
 struct command *
 find_command (const char* cmd);
 
-void output_hex (FILE *stream, struct ci2c_octet_buffer buf);
+void output_hex (FILE *stream, struct lca_octet_buffer buf);
 
 /**
  * Sets reasonable defaults for arguments

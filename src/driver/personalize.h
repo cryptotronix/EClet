@@ -21,11 +21,11 @@
 #ifndef PERSONALIZE_H
 #define PERSONALIZE_H
 
-#include <libcrypti2c.h>
+#include <libcryptoauth.h>
 
 struct key_container
 {
-  struct ci2c_octet_buffer keys[MAX_NUM_DATA_SLOTS];
+  struct lca_octet_buffer keys[MAX_NUM_DATA_SLOTS];
 };
 
 /**

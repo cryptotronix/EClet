@@ -22,7 +22,7 @@
 #include <assert.h>
 #include <stdio.h>
 #include <string.h>
-#include <libcrypti2c.h>
+#include <libcryptoauth.h>
 #include <stdlib.h>
 
 struct slot_config make_ecc_key_slot_config ()
@@ -82,26 +82,26 @@ void serialize_slot_config (struct slot_config *s, uint8_t *config)
   if (s->check_only)
     {
       *p |= CHECK_ONLY_MASK;
-      CI2C_LOG (DEBUG, "Check only set on slot config");
+      LCA_LOG (DEBUG, "Check only set on slot config");
     }
 
 
   if (s->single_use)
     {
       *p |= SINGLE_USE_MASK;
-      CI2C_LOG (DEBUG, "Single use set on slot config");
+      LCA_LOG (DEBUG, "Single use set on slot config");
     }
 
   if (s->encrypted_read)
     {
       *p |= ENCRYPTED_READ_MASK;
-      CI2C_LOG (DEBUG, "Encrypted read set on slot conifg");
+      LCA_LOG (DEBUG, "Encrypted read set on slot conifg");
     }
 
   if (s->is_secret)
     {
       *p |= IS_SECRET_MASK;
-      CI2C_LOG (DEBUG, "Is Secret set on slot config");
+      LCA_LOG (DEBUG, "Is Secret set on slot config");
     }
 
   /* The first byte has now been set */
@@ -112,22 +112,22 @@ void serialize_slot_config (struct slot_config *s, uint8_t *config)
   if (s->derive_key)
     {
       *p |= WRITE_CONFIG_DERIVEKEY_MASK;
-      CI2C_LOG (DEBUG, "Derive Key set on slot config");
+      LCA_LOG (DEBUG, "Derive Key set on slot config");
     }
 
   switch (s->write_config)
     {
     case ALWAYS:
       *p |= WRITE_CONFIG_ALWAYS_MASK;
-      CI2C_LOG (DEBUG, "Write config always set");
+      LCA_LOG (DEBUG, "Write config always set");
       break;
     case NEVER:
       *p |= WRITE_CONFIG_NEVER_MASK;
-      CI2C_LOG (DEBUG, "Write config NEVER set");
+      LCA_LOG (DEBUG, "Write config NEVER set");
       break;
     case ENCRYPT:
       *p |= WRITE_CONFIG_ENCRYPT_MASK;
-      CI2C_LOG (DEBUG, "Write config ENCRYPT set");
+      LCA_LOG (DEBUG, "Write config ENCRYPT set");
       break;
     default:
       assert (false);
@@ -139,7 +139,7 @@ void serialize_slot_config (struct slot_config *s, uint8_t *config)
   config[0] = config[1];
   config[1] = tmp;
 
-  CI2C_LOG (DEBUG, "Slot Config set: %02x %02x", config[0], config[1] );
+  LCA_LOG (DEBUG, "Slot Config set: %02x %02x", config[0], config[1] );
 
 }
 
@@ -149,7 +149,7 @@ struct slot_config parse_slot_config (uint8_t *raw)
   struct slot_config parsed = {0};
   uint8_t * ptr = &raw[1];
 
-  CI2C_LOG (DEBUG, "*** PARSING SLOT CONFIG ***");
+  LCA_LOG (DEBUG, "*** PARSING SLOT CONFIG ***");
   /* Start with the LSB */
   const uint16_t READ_KEY_MASK = 15;
 
@@ -158,25 +158,25 @@ struct slot_config parse_slot_config (uint8_t *raw)
   if ((*ptr & CHECK_ONLY_MASK) == CHECK_ONLY_MASK)
     {
       parsed.check_only = true;
-      CI2C_LOG (DEBUG, "Slot config Check only set");
+      LCA_LOG (DEBUG, "Slot config Check only set");
     }
 
   if ((*ptr & SINGLE_USE_MASK) == SINGLE_USE_MASK)
     {
       parsed.single_use = true;
-      CI2C_LOG (DEBUG, "Single use slot config set");
+      LCA_LOG (DEBUG, "Single use slot config set");
     }
 
   if ((*ptr & ENCRYPTED_READ_MASK) == ENCRYPTED_READ_MASK)
     {
       parsed.encrypted_read = true;
-      CI2C_LOG (DEBUG, "Encrypted read slot config set");
+      LCA_LOG (DEBUG, "Encrypted read slot config set");
     }
 
   if ((*ptr & IS_SECRET_MASK) == IS_SECRET_MASK)
     {
       parsed.is_secret = true;
-      CI2C_LOG (DEBUG, "Is Secret slot config set");
+      LCA_LOG (DEBUG, "Is Secret slot config set");
     }
 
   /* Now parse the MSB */
@@ -185,12 +185,12 @@ struct slot_config parse_slot_config (uint8_t *raw)
 
   parsed.write_key = *ptr & WRITE_KEY_MASK;
 
-  CI2C_LOG (DEBUG, "Slot config Write Key %u", parsed.write_key);
+  LCA_LOG (DEBUG, "Slot config Write Key %u", parsed.write_key);
 
   if ((*ptr & WRITE_CONFIG_DERIVEKEY_MASK) == WRITE_CONFIG_DERIVEKEY_MASK)
     {
       parsed.derive_key = true;
-      CI2C_LOG (DEBUG, "Derive Key slot config set");
+      LCA_LOG (DEBUG, "Derive Key slot config set");
     }
 
   uint8_t write_config = *ptr & ~WRITE_KEY_MASK;
@@ -198,21 +198,21 @@ struct slot_config parse_slot_config (uint8_t *raw)
   if (0 == (~7 & write_config))
     {
       parsed.write_config = ALWAYS;
-      CI2C_LOG (DEBUG, "Slot Config ALWAYS set");
+      LCA_LOG (DEBUG, "Slot Config ALWAYS set");
     }
   else if (WRITE_CONFIG_ENCRYPT_MASK == (write_config &
                                          WRITE_CONFIG_ENCRYPT_MASK))
     {
       parsed.write_config = ENCRYPT;
-      CI2C_LOG (DEBUG, "Slot Config ENCRYPT set");
+      LCA_LOG (DEBUG, "Slot Config ENCRYPT set");
     }
   else
     {
       parsed.write_config = NEVER;
-      CI2C_LOG (DEBUG, "Slot Config NEVER set");
+      LCA_LOG (DEBUG, "Slot Config NEVER set");
     }
 
-  CI2C_LOG (DEBUG, "*** END PARSING ***");
+  LCA_LOG (DEBUG, "*** END PARSING ***");
 
   return parsed;
 
@@ -297,14 +297,14 @@ struct slot_config** build_slot_configs (void)
   const unsigned int NUM_SLOTS = 16;
 
   struct slot_config **config = (struct slot_config **)
-    ci2c_malloc_wipe (NUM_SLOTS * sizeof(struct slot_config *));
+    lca_malloc_wipe (NUM_SLOTS * sizeof(struct slot_config *));
 
   int x = 0;
 
   for (x=0; x<NUM_SLOTS; x++)
     {
       config[x] = (struct slot_config *)
-        ci2c_malloc_wipe (sizeof (struct slot_config));
+        lca_malloc_wipe (sizeof (struct slot_config));
     }
 
   /* Set up each slot */
@@ -414,9 +414,9 @@ bool set_key_config (int fd)
 
   uint8_t key_config_addr = 0x18;
 
-  struct ci2c_octet_buffer to_write = { key_config, sizeof(key_config)};
+  struct lca_octet_buffer to_write = { key_config, sizeof(key_config)};
 
-  return ci2c_write32_cmd (fd, CONFIG_ZONE, key_config_addr, to_write, NULL);
+  return lca_write32_cmd (fd, CONFIG_ZONE, key_config_addr, to_write, NULL);
 
 }
 
@@ -425,7 +425,7 @@ bool set_config_zone (int fd)
 {
   bool result = false;
 
-  if (ci2c_is_config_locked (fd))
+  if (lca_is_config_locked (fd))
     return true;
 
   enum config_slots slots[CONFIG_SLOTS_NUM_SLOTS] = {slot0, slot2, slot4,
@@ -459,7 +459,7 @@ bool set_config_zone (int fd)
     {
       if ((result = set_slot_locked_and_temp (fd)))
         {
-          CI2C_LOG (DEBUG, "slot lock config passed");
+          LCA_LOG (DEBUG, "slot lock config passed");
           result = set_key_config (fd);
         }
     }
