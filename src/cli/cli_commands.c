@@ -25,7 +25,10 @@
 #include "cli_commands.h"
 #include "config.h"
 #include "../driver/personalize.h"
-#include <libcrypti2c.h>
+#include <libcryptoauth.h>
+#include <sys/types.h>
+#include <sys/stat.h>
+#include <fcntl.h>
 
 static struct command commands[NUM_CLI_COMMANDS];
 
@@ -52,7 +55,7 @@ set_defaults (struct arguments *args)
 }
 
 void
-output_hex (FILE *stream, struct ci2c_octet_buffer buf)
+output_hex (FILE *stream, struct lca_octet_buffer buf)
 {
 
   assert (NULL != stream);
@@ -180,12 +183,12 @@ dispatch (const char *command, struct arguments *args)
         {
           result = (*cmd->func)(fd, args);
         }
-      else if ((fd = ci2c_atmel_setup (bus, args->address)) < 0)
+      else if ((fd = lca_atmel_setup (bus, args->address)) < 0)
         perror ("Failed to setup the device");
       else
         {
           result = (*cmd->func)(fd, args);
-          ci2c_atmel_teardown (fd);
+          lca_atmel_teardown (fd);
         }
 
 
@@ -245,7 +248,7 @@ is_expected_len (const char* arg, unsigned int len)
 bool
 is_hex_arg (const char* arg, unsigned int len)
 {
-  if (is_expected_len (arg, len) && ci2c_is_all_hex (arg, len))
+  if (is_expected_len (arg, len) && lca_is_all_hex (arg, len))
     return true;
   else
     return false;
@@ -256,15 +259,15 @@ int
 cli_random (int fd, struct arguments *args)
 {
 
-  struct ci2c_octet_buffer response;
+  struct lca_octet_buffer response;
   int result = HASHLET_COMMAND_FAIL;
   assert (NULL != args);
 
-  response = get_random (fd, args->update_seed);
+  response = lca_get_random (fd, args->update_seed);
   if (NULL != response.ptr)
     {
       output_hex (stdout, response);
-      ci2c_free_octet_buffer (response);
+      lca_free_octet_buffer (response);
       result = HASHLET_COMMAND_SUCCESS;
     }
 
@@ -274,7 +277,7 @@ cli_random (int fd, struct arguments *args)
 int
 cli_get_serial_num (int fd, struct arguments *args)
 {
-  struct ci2c_octet_buffer response;
+  struct lca_octet_buffer response;
   int result = HASHLET_COMMAND_FAIL;
   assert (NULL != args);
 
@@ -282,7 +285,7 @@ cli_get_serial_num (int fd, struct arguments *args)
   if (NULL != response.ptr)
     {
       output_hex (stdout, response);
-      ci2c_free_octet_buffer (response);
+      lca_free_octet_buffer (response);
       result = HASHLET_COMMAND_SUCCESS;
     }
 
@@ -297,7 +300,7 @@ cli_get_state (int fd, struct arguments *args)
   int result = HASHLET_COMMAND_SUCCESS;
   const char *state = "";
 
-  switch (get_device_state (fd))
+  switch (lca_get_device_state (fd))
     {
     case STATE_FACTORY:
       state = "Factory";
@@ -322,7 +325,7 @@ cli_get_state (int fd, struct arguments *args)
 int
 cli_get_config_zone (int fd, struct arguments *args)
 {
-  struct ci2c_octet_buffer response;
+  struct lca_octet_buffer response;
   int result = HASHLET_COMMAND_FAIL;
   assert (NULL != args);
 
@@ -330,7 +333,7 @@ cli_get_config_zone (int fd, struct arguments *args)
   if (NULL != response.ptr)
     {
       output_hex (stdout, response);
-      ci2c_free_octet_buffer (response);
+      lca_free_octet_buffer (response);
       result = HASHLET_COMMAND_SUCCESS;
     }
 
@@ -341,11 +344,11 @@ cli_get_config_zone (int fd, struct arguments *args)
 
 int cli_get_otp_zone (int fd, struct arguments *args)
 {
-  struct ci2c_octet_buffer response;
+  struct lca_octet_buffer response;
   int result = HASHLET_COMMAND_FAIL;
   assert (NULL != args);
 
-  if (STATE_PERSONALIZED != get_device_state (fd))
+  if (STATE_PERSONALIZED != lca_get_device_state (fd))
     {
       fprintf (stderr, "%s\n" ,"Can only read OTP zone when personalized");
       return result;
@@ -356,7 +359,7 @@ int cli_get_otp_zone (int fd, struct arguments *args)
   if (NULL != response.ptr)
     {
       output_hex (stdout, response);
-      ci2c_free_octet_buffer (response);
+      lca_free_octet_buffer (response);
       result = HASHLET_COMMAND_SUCCESS;
     }
 
@@ -390,14 +393,14 @@ cli_read_key_slot (int fd, struct arguments *args)
   int result = HASHLET_COMMAND_FAIL;
   assert (NULL != args);
 
-  struct ci2c_octet_buffer buf = {0,0};
+  struct lca_octet_buffer buf = {0,0};
   buf = read32 (fd, DATA_ZONE, slot_to_addr (DATA_ZONE, args->key_slot));
 
   if (NULL != buf.ptr)
     {
       result = HASHLET_COMMAND_SUCCESS;
       output_hex (stdout, buf);
-      ci2c_free_octet_buffer (buf);
+      lca_free_octet_buffer (buf);
     }
   else
     fprintf (stderr, "%s%d\n" ,"Data can't be read from key slot: ",
@@ -413,23 +416,25 @@ cli_gen_key (int fd, struct arguments *args)
   int result = HASHLET_COMMAND_FAIL;
   assert (NULL != args);
 
-  struct ci2c_octet_buffer pub_key = gen_ecc_key (fd, args->key_slot, true);
+  struct lca_octet_buffer pub_key = lca_gen_ecc_key (fd,
+                                                       args->key_slot,
+                                                       true);
 
   /* There appears to be a bug on the chip where generate one key sets
   the updateCount in such a way that signatures fail. The interim fix
   is to generate two keys and discard the first. */
-  pub_key = gen_ecc_key (fd, args->key_slot, true);
+  pub_key = lca_gen_ecc_key (fd, args->key_slot, true);
 
   if (NULL != pub_key.ptr)
     {
-      struct ci2c_octet_buffer uncompressed =
-        ci2c_add_uncompressed_point_tag (pub_key);
+      struct lca_octet_buffer uncompressed =
+        lca_add_uncompressed_point_tag (pub_key);
 
       assert (NULL != uncompressed.ptr);
       assert (65 == uncompressed.len);
 
       output_hex (stdout, uncompressed);
-      ci2c_free_octet_buffer (uncompressed);
+      lca_free_octet_buffer (uncompressed);
       result = HASHLET_COMMAND_SUCCESS;
     }
   else
@@ -453,11 +458,11 @@ cli_ecc_sign (int fd, struct arguments *args)
   if ((f = get_input_file (args)) != NULL)
     {
       /* Digest the file then proceed */
-      struct ci2c_octet_buffer file_digest = {0,0};
-      file_digest = ci2c_sha256 (f);
+      struct lca_octet_buffer file_digest = {0,0};
+      file_digest = lca_sha256 (f);
       close_input_file (args, f);
 
-      ci2c_print_hex_string ("SHA256 file digest",
+      lca_print_hex_string ("SHA256 file digest",
                              file_digest.ptr,
                              file_digest.len);
 
@@ -465,19 +470,19 @@ cli_ecc_sign (int fd, struct arguments *args)
         {
 
           /* Forces a seed update on the RNG */
-          struct ci2c_octet_buffer r = get_random (fd, true);
+          struct lca_octet_buffer r = lca_get_random (fd, true);
 
           /* Loading the nonce is the mechanism to load the SHA256
              hash into the device */
           if (load_nonce (fd, file_digest))
             {
 
-              struct ci2c_octet_buffer rsp = ecc_sign (fd, args->key_slot);
+              struct lca_octet_buffer rsp = lca_ecc_sign (fd, args->key_slot);
 
               if (NULL != rsp.ptr)
                 {
                   output_hex (stdout, rsp);
-                  ci2c_free_octet_buffer (rsp);
+                  lca_free_octet_buffer (rsp);
                   result = HASHLET_COMMAND_SUCCESS;
                 }
               else
@@ -487,12 +492,12 @@ cli_ecc_sign (int fd, struct arguments *args)
 
             }
 
-          ci2c_free_octet_buffer (r);
+          lca_free_octet_buffer (r);
         }
     }
   else
     {
-      CI2C_LOG (DEBUG, "File pointer is NULL");
+      LCA_LOG (DEBUG, "File pointer is NULL");
     }
 
 
@@ -507,8 +512,8 @@ cli_ecc_verify (int fd, struct arguments *args)
   assert (NULL != args);
 
   FILE *f = NULL;
-  struct ci2c_octet_buffer signature = {0,0};
-  struct ci2c_octet_buffer pub_key = {0,0};
+  struct lca_octet_buffer signature = {0,0};
+  struct lca_octet_buffer pub_key = {0,0};
 
   if (NULL == args->signature)
     {
@@ -520,20 +525,20 @@ cli_ecc_verify (int fd, struct arguments *args)
     }
   else
     {
-      signature = ci2c_ascii_hex_2_bin (args->signature, 128);
-      ci2c_print_hex_string ("Signature", signature.ptr, signature.len);
+      signature = lca_ascii_hex_2_bin (args->signature, 128);
+      lca_print_hex_string ("Signature", signature.ptr, signature.len);
 
-      pub_key = ci2c_ascii_hex_2_bin (args->pub_key, 130);
-      ci2c_print_hex_string ("Public Key", pub_key.ptr, pub_key.len);
+      pub_key = lca_ascii_hex_2_bin (args->pub_key, 130);
+      lca_print_hex_string ("Public Key", pub_key.ptr, pub_key.len);
 
       if ((f = get_input_file (args)) != NULL)
         {
           /* Digest the file then proceed */
-          struct ci2c_octet_buffer file_digest = {0,0};
-          file_digest = ci2c_sha256 (f);
+          struct lca_octet_buffer file_digest = {0,0};
+          file_digest = lca_sha256 (f);
           close_input_file (args, f);
 
-          ci2c_print_hex_string ("SHA256 file digest",
+          lca_print_hex_string ("SHA256 file digest",
                                  file_digest.ptr,
                                  file_digest.len);
 
@@ -549,7 +554,7 @@ cli_ecc_verify (int fd, struct arguments *args)
                      point format tag */
                   pub_key.ptr = pub_key.ptr + 1;
                   pub_key.len = pub_key.len - 1;
-                  if (ecc_verify (fd, pub_key, signature))
+                  if (lca_ecc_verify (fd, pub_key, signature))
                     {
                       result = HASHLET_COMMAND_SUCCESS;
 
@@ -566,7 +571,7 @@ cli_ecc_verify (int fd, struct arguments *args)
 
             }
 
-          ci2c_free_octet_buffer (file_digest);
+          lca_free_octet_buffer (file_digest);
 
         }
       else
@@ -574,8 +579,8 @@ cli_ecc_verify (int fd, struct arguments *args)
           /* temp_key_loaded already false */
         }
 
-      ci2c_free_octet_buffer (pub_key);
-      ci2c_free_octet_buffer (signature);
+      lca_free_octet_buffer (pub_key);
+      lca_free_octet_buffer (signature);
     }
 
   return result;
@@ -589,8 +594,8 @@ cli_ecc_offline_verify (int fd, struct arguments *args)
   assert (NULL != args);
 
   FILE *f = NULL;
-  struct ci2c_octet_buffer signature = {0,0};
-  struct ci2c_octet_buffer pub_key = {0,0};
+  struct lca_octet_buffer signature = {0,0};
+  struct lca_octet_buffer pub_key = {0,0};
 
   if (NULL == args->signature)
     {
@@ -602,49 +607,49 @@ cli_ecc_offline_verify (int fd, struct arguments *args)
     }
   else
     {
-      signature = ci2c_ascii_hex_2_bin (args->signature, 128);
-      ci2c_print_hex_string ("Signature", signature.ptr, signature.len);
+      signature = lca_ascii_hex_2_bin (args->signature, 128);
+      lca_print_hex_string ("Signature", signature.ptr, signature.len);
 
-      pub_key = ci2c_ascii_hex_2_bin (args->pub_key, 130);
-      ci2c_print_hex_string ("Public Key", pub_key.ptr, pub_key.len);
+      pub_key = lca_ascii_hex_2_bin (args->pub_key, 130);
+      lca_print_hex_string ("Public Key", pub_key.ptr, pub_key.len);
 
       if ((f = get_input_file (args)) != NULL)
         {
           /* Digest the file then proceed */
-          struct ci2c_octet_buffer file_digest = {0,0};
-          file_digest = ci2c_sha256 (f);
+          struct lca_octet_buffer file_digest = {0,0};
+          file_digest = lca_sha256 (f);
           close_input_file (args, f);
 
-          ci2c_print_hex_string ("SHA256 file digest",
+          lca_print_hex_string ("SHA256 file digest",
                                  file_digest.ptr,
                                  file_digest.len);
 
           if (NULL != file_digest.ptr)
             {
-              if (ci2c_ecdsa_p256_verify (pub_key, signature, file_digest))
+              if (lca_ecdsa_p256_verify (pub_key, signature, file_digest))
                 {
-                  CI2C_LOG (DEBUG, "Verify Success");
+                  LCA_LOG (DEBUG, "Verify Success");
                   result = HASHLET_COMMAND_SUCCESS;
                 }
               else
                 {
                   perror ("Verify Failed\n");
-                  CI2C_LOG (DEBUG, "Verify Failure");
+                  LCA_LOG (DEBUG, "Verify Failure");
                 }
 
-              ci2c_free_octet_buffer (file_digest);
+              lca_free_octet_buffer (file_digest);
             }
           else
             {
-              CI2C_LOG (DEBUG, "Digest NULL");
+              LCA_LOG (DEBUG, "Digest NULL");
             }
 
-          ci2c_free_octet_buffer (pub_key);
-          ci2c_free_octet_buffer (signature);
+          lca_free_octet_buffer (pub_key);
+          lca_free_octet_buffer (signature);
         }
       else
         {
-          CI2C_LOG (DEBUG, "Error loading file");
+          LCA_LOG (DEBUG, "Error loading file");
         }
     }
 
@@ -659,19 +664,21 @@ cli_get_pub_key (int fd, struct arguments *args)
   int result = HASHLET_COMMAND_FAIL;
   assert (NULL != args);
 
-  struct ci2c_octet_buffer pub_key = gen_ecc_key (fd, args->key_slot, false);
+  struct lca_octet_buffer pub_key = lca_gen_ecc_key (fd,
+                                                       args->key_slot,
+                                                       false);
 
   if (NULL != pub_key.ptr)
     {
 
-      struct ci2c_octet_buffer uncompressed =
-        ci2c_add_uncompressed_point_tag (pub_key);
+      struct lca_octet_buffer uncompressed =
+        lca_add_uncompressed_point_tag (pub_key);
 
       assert (NULL != uncompressed.ptr);
       assert (65 == uncompressed.len);
 
       output_hex (stdout, uncompressed);
-      ci2c_free_octet_buffer (uncompressed);
+      lca_free_octet_buffer (uncompressed);
       result = HASHLET_COMMAND_SUCCESS;
     }
   else

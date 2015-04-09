@@ -26,12 +26,11 @@ SUBDIRS = doc .
 AM_YFLAGS = -d
 
 bin_PROGRAMS = eclet
-eclet_SOURCES = src/driver/command.h src/driver/command.c \
-	          src/driver/defs.h \
-	          src/cli/main.c \
-		  src/driver/personalize.h src/driver/personalize.c \
-		  src/cli/cli_commands.h src/cli/cli_commands.c \
-		  src/driver/config_zone.h src/driver/config_zone.c
+eclet_SOURCES = src/driver/defs.h \
+                src/cli/main.c \
+                src/driver/personalize.h src/driver/personalize.c \
+                src/cli/cli_commands.h src/cli/cli_commands.c \
+                src/driver/config_zone.h src/driver/config_zone.c
 
 eclet_CFLAGS = -Wall
 

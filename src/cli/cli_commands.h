@@ -25,7 +25,7 @@
 #include <stdio.h>
 #include <stdint.h>
 #include <stdlib.h>
-#include <libcrypti2c.h>
+#include <libcryptoauth.h>
 
 #define NUM_ARGS 1
 
@@ -63,7 +63,17 @@ struct command
   int (*func)(int, struct arguments *);
 };
 
-void output_hex (FILE *stream, struct ci2c_octet_buffer buf);
+/**
+ * Search through the global command table for the command string.
+ *
+ * @param cmd The command's string to which one can search.
+ *
+ * @return The pointer to the command structure or null if can't be found.
+ */
+struct command *
+find_command (const char* cmd);
+
+void output_hex (FILE *stream, struct lca_octet_buffer buf);
 
 /**
  * Sets reasonable defaults for arguments

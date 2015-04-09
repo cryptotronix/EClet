@@ -21,8 +21,7 @@
 #ifndef CONFIG_ZONE_H
 #define CONFIG_ZONE_H
 
-#include "defs.h"
-#include <libcrypti2c.h>
+#include <libcryptoauth.h>
 
 #define WRITE_CONFIG_ALWAYS_MASK     0b00000000
 #define WRITE_CONFIG_NEVER_MASK      0b10000000

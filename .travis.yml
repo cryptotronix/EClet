@@ -3,5 +3,5 @@ compiler:
   - gcc
   - clang
 # Change this to your needs
-before_install: sudo apt-get install texinfo guile-1.8 guile-1.8-dev
+before_install: sudo apt-get install texinfo libxml2-dev check
 script: ./autogen.sh

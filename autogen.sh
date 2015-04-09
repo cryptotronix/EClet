@@ -20,15 +20,17 @@ if [ ! -d "m4" ]; then
     mkdir m4
 fi
 
-pkg-config --exists crypti2c-0.1
+pkg-config --exists cryptoauth-0.2
 HAVE_CRYPTI2C=$?
 
 if [ $HAVE_CRYPTI2C -eq 0 ]; then
-    echo libcrypti2c already installed
+    echo libcryptoauth already installed
 else
-    git clone https://github.com/cryptotronix/libcrypti2c.git
-    cd libcrypti2c
-    ./autogen.sh
+    wget https://github.com/cryptotronix/libcrypti2c/releases/download/v0.2/libcryptoauth-0.2.tar.gz
+    tar xf libcryptoauth-0.2.tar.gz
+    cd libcryptoauth-0.2
+    ./configure
+    make
     echo Enter password to install libcrypti2c library
     sudo make install
     cd ..
