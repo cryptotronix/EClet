@@ -213,7 +213,7 @@ parse_opt (int key, char *arg, struct argp_state *state)
         arguments->meta = arg;
       break;
     case ARGP_KEY_ARG:
-      if (state->arg_num > NUM_ARGS)
+      if (state->arg_num >= NUM_ARGS)
         /* Too many arguments. */
         argp_usage (state);
       else
