@@ -14,19 +14,22 @@ Status
 
 This software is in ***BETA***. I have tested the below commands, but some there are some features and documentation that I would like to finish. If you use this software, it will configure your ECC108 in a non-reversible way. It will allow you to sign and verify with P256 keys but future features may be incompatible.
 
-You can following along with the release status [here](https://github.com/cryptotronix/EClet/issues?milestone=1&state=open).
+Releases
+-----
+
+You can download the latest release [here](https://github.com/cryptotronix/EClet/releases/download/0.1.1/eclet-0.1.1.tar.gz). You will also need [this](https://github.com/cryptotronix/libcrypti2c/releases/download/v0.2/libcryptoauth-0.2.tar.gz) release of libcryptoauth.
 
 Building
 ----
 
 This project uses Autotools.
 
-It requires [libcryptoauth-0.2](https://github.com/cryptotronix/libcrypti2c), also in ***ALPHA***. If you use the [autogen](https://github.com/cryptotronix/EClet/blob/master/autogen.sh) script, it will automatically build and install the library.
+It requires [libcryptoauth-0.2](https://github.com/cryptotronix/libcrypti2c), also in ***BETA***. If you use the [autogen](https://github.com/cryptotronix/EClet/blob/master/autogen.sh) script, it will automatically build and install the library.
 
 Hardware
 ---
 
-Product page will be available shortly. This software will also work on the [CryptoCape](http://www.cryptotronix.com/products/cryptocape).
+The Hardware folder has an example board layout. This software will also work on the [CryptoCape](https://www.sparkfun.com/products/12773).
 
 Running
 ---
