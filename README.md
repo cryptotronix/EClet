@@ -2,13 +2,17 @@ EClet
 =====
 
 [![Build Status](https://travis-ci.org/cryptotronix/EClet.png)](https://travis-ci.org/cryptotronix/EClet)
+<a href="https://scan.coverity.com/projects/4781">
+  <img alt="Coverity Scan Build Status"
+       src="https://scan.coverity.com/projects/4781/badge.svg"/>
+</a>
 
 Driver for the Cryptotronix EClet containing an Atmel ATECC108
 
 Status
 ---
 
-This software is in ***ALPHA***. I have tested the below commands, but some there are some features and documentation that I would like to finish. If you use this software, it will configure your ECC108 in a non-reversible way. It will allow you to sign and verify with P256 keys but future features may be incompatible.
+This software is in ***BETA***. I have tested the below commands, but some there are some features and documentation that I would like to finish. If you use this software, it will configure your ECC108 in a non-reversible way. It will allow you to sign and verify with P256 keys but future features may be incompatible.
 
 You can following along with the release status [here](https://github.com/cryptotronix/EClet/issues?milestone=1&state=open).
 
@@ -17,7 +21,7 @@ Building
 
 This project uses Autotools.
 
-It requires [libcrypti2c](https://github.com/cryptotronix/libcrypti2c), also in ***ALPHA***. If you use the [autogen](https://github.com/cryptotronix/EClet/blob/master/autogen.sh) script, it will automatically build and install the library.
+It requires [libcryptoauth-0.2](https://github.com/cryptotronix/libcrypti2c), also in ***ALPHA***. If you use the [autogen](https://github.com/cryptotronix/EClet/blob/master/autogen.sh) script, it will automatically build and install the library.
 
 Hardware
 ---
@@ -27,7 +31,16 @@ Product page will be available shortly. This software will also work on the [Cry
 Running
 ---
 
-see `./eclet --help` for full details.  The default I2C bus is `/dev/i2c-1` and this can be changed with the `-b` option.
+see `./eclet --help` for full details.  The default I2C bus is
+`/dev/i2c-1` and this can be changed with the `-b` option.
+
+Kernel option
+---
+
+If you build
+[libcryptoauth](https://github.com/cryptotronix/libcrypti2c) with the
+`-DUSE_KERNEL` flag and install the kernel module, this utility will
+use that module if you pass in: `-b /dev/atsha0`.
 
 Root
 ---
@@ -111,10 +124,5 @@ Support
 IRC: Join the `#cryptotronix` channel on freenode.
 
 Mailing lists: `hashlet-announce` and `hashlet-users` are open for subscriptions [here](https://savannah.nongnu.org/mail/?group=hashlet).
-
-Contributing
----
-See the wiki page on [contributing](https://github.com/cryptotronix/hashlet/wiki/Contributing).
-
 
 ![GPLv3](https://www.gnu.org/graphics/gplv3-127x51.png)
