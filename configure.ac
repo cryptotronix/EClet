@@ -15,7 +15,7 @@
 # You should have received a copy of the GNU General Public License
 # along with EClet.  If not, see <http://www.gnu.org/licenses/>.
 
-AC_INIT([eclet], [0.1.0], [bugs@cryptotronix.com], [eclet], [http://www.github.com/cryptotronix/EClet/])
+AC_INIT([eclet], [0.1.1], [bugs@cryptotronix.com], [eclet], [http://www.github.com/cryptotronix/EClet/])
 AC_PREREQ([2.59])
 AM_INIT_AUTOMAKE([1.10 -Wall no-define])
 AC_CONFIG_MACRO_DIR([m4])
