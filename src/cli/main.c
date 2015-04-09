@@ -133,6 +133,8 @@ parse_opt (int key, char *arg, struct argp_state *state)
         }
       else
         LCA_LOG (INFO, "Address not recognized, using default");
+
+      break;
     case 'b':
       arguments->bus = arg;
       break;
