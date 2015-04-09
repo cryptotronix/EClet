@@ -216,8 +216,8 @@ parse_opt (int key, char *arg, struct argp_state *state)
       if (state->arg_num > NUM_ARGS)
         /* Too many arguments. */
         argp_usage (state);
-
-      arguments->args[state->arg_num] = arg;
+      else
+        arguments->args[state->arg_num] = arg;
 
       break;
 
