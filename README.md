@@ -26,6 +26,10 @@ This project uses Autotools.
 
 It requires [libcryptoauth-0.2](https://github.com/cryptotronix/libcrypti2c), also in ***BETA***. If you use the [autogen](https://github.com/cryptotronix/EClet/blob/master/autogen.sh) script, it will automatically build and install the library.
 
+Also ensure that gcc, automake, autoconf, libxml2-dev, check and libgcrypt (libgcrypt11-dev on Debian variants) are installed
+
+Then run ./autogen.sh
+
 Hardware
 ---
 
