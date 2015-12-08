@@ -26,7 +26,8 @@ HAVE_CRYPTI2C=$?
 if [ $HAVE_CRYPTI2C -eq 0 ]; then
     echo libcryptoauth already installed
 else
-    wget https://github.com/cryptotronix/libcrypti2c/releases/download/v0.2/libcryptoauth-0.2.tar.gz
+    rm -rf libcryptoauth-0.2
+    wget -c https://github.com/cryptotronix/libcrypti2c/releases/download/v0.2/libcryptoauth-0.2.tar.gz
     tar xf libcryptoauth-0.2.tar.gz
     cd libcryptoauth-0.2
     ./configure
@@ -37,6 +38,18 @@ else
     sudo ldconfig
 fi
 
+echo Generating README prerequisite...
+egrep -v "\[Build Status\]|Coverity Scan Build Status|scan\.coverity\.com" README.md \
+  | markdown \
+  | html2text -style pretty -nobs \
+  > README
+
+echo Running autoreconf...
 autoreconf --force --install
+
+echo Configuring...
 ./configure
+
+echo Making...
 make
+
