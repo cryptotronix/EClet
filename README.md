@@ -22,11 +22,11 @@ You can download the latest release [here](https://github.com/cryptotronix/EClet
 Building
 ----
 
-This project requires [libcryptoauth-0.2](https://github.com/cryptotronix/libcrypti2c), also in ***BETA***. If you use the [autogen](https://github.com/cryptotronix/EClet/blob/master/autogen.sh) script, it will automatically build and install the library.
-
 Install build-essential, autotools-dev, automake, autoconf, libtool, libxml2-dev, check, texinfo, and libgcrypt (libgcrypt11-dev on Debian variants)
 
-Run `./autogen.sh`
+Run `./autogen.sh`. This will generate the required README file from README.md as well as installing the required ***BETA*** version of [libcryptoauth-0.2](https://github.com/cryptotronix/libcrypti2c) (`sudo` is used to install this library)
+
+You can run `eclet` locally, or install it to the system by running `sudo make install`
 
 Hardware
 ---
