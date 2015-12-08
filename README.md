@@ -22,15 +22,11 @@ You can download the latest release [here](https://github.com/cryptotronix/EClet
 Building
 ----
 
-This project uses Autotools.
+This project requires [libcryptoauth-0.2](https://github.com/cryptotronix/libcrypti2c), also in ***BETA***. If you use the [autogen](https://github.com/cryptotronix/EClet/blob/master/autogen.sh) script, it will automatically build and install the library.
 
-It requires [libcryptoauth-0.2](https://github.com/cryptotronix/libcrypti2c), also in ***BETA***. If you use the [autogen](https://github.com/cryptotronix/EClet/blob/master/autogen.sh) script, it will automatically build and install the library.
-
-Also ensure that gcc, automake, autoconf, libxml2-dev, check, texinfo, and libgcrypt (libgcrypt11-dev on Debian variants) are installed.
+Install build-essential, autotools-dev, automake, autoconf, libtool, libxml2-dev, check, texinfo, and libgcrypt (libgcrypt11-dev on Debian variants)
 
 Run `./autogen.sh`
-
-Problems like `configure.ac:29: error: possibly undefined macro: AC_PROG_LIBTOOL`? Run `autoreconf --install` and then autogen.sh again.
 
 Hardware
 ---
