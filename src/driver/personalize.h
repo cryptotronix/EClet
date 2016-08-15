@@ -1,5 +1,5 @@
 /* -*- mode: c; c-file-style: "gnu" -*-
- * Copyright (C) 2014 Cryptotronix, LLC.
+ * Copyright (C) 2014-2016 Cryptotronix, LLC.
  *
  * This file is part of EClet.
  *
@@ -25,7 +25,7 @@
 
 struct key_container
 {
-  struct lca_octet_buffer keys[MAX_NUM_DATA_SLOTS];
+  struct lca_octet_buffer keys[LCA_MAX_NUM_DATA_SLOTS];
 };
 
 /**
@@ -55,9 +55,9 @@ void free_key_container (struct key_container *keys);
  *
  * @return
  */
-enum DEVICE_STATE personalize (int fd, enum DEVICE_STATE goal,
-                               struct key_container *keys);
-
+enum DEVICE_STATE
+eclet_personalize (int fd, enum DEVICE_STATE goal,
+                   struct key_container *keys);
 
 
 bool lock_config_zone (int fd, enum DEVICE_STATE state);

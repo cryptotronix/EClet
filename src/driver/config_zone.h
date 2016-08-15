@@ -40,7 +40,7 @@ enum WRITE_CONFIG
     ALWAYS = 0,                   /**< Always allow write access */
     NEVER,                        /**< Never allow write access  */
     ENCRYPT                       /**< Only allowed encrypted write access */
-  };
+  } WRITE_CONFIG;
 
 
 /* Enumerations for the Slot configuration areas.  Two slots must be
@@ -57,7 +57,7 @@ enum config_slots
     slot12,
     slot14,
     CONFIG_SLOTS_NUM_SLOTS
-  };
+  }config_slots ;
 
 struct slot_config
 {
@@ -87,7 +87,19 @@ struct slot_config
                                    derive key commands */
   enum WRITE_CONFIG write_config;
 
-};
+}slot_config;
+
+/**
+ * Set the configuration zone based.  This function will setup the
+ * configuration zone, and thus the device, to a fixed configuration.
+ *
+ * @param fd The open file descriptor.
+ *
+ * @return True if succesful, otherwise false
+ */
+bool
+eclet_set_config_zone (int fd);
+
 
 
 /**

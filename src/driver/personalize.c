@@ -31,9 +31,9 @@
 #include "config_zone.h"
 
 unsigned int
-get_max_keys ()
+get_max_keys (void)
 {
-  return MAX_NUM_DATA_SLOTS;
+  return LCA_MAX_NUM_DATA_SLOTS;
 }
 
 
@@ -88,13 +88,14 @@ bool lock_config_zone (int fd, enum DEVICE_STATE state)
 
   uint16_t crc = lca_calculate_crc16 (config.ptr, config.len);
 
-  return lock (fd, CONFIG_ZONE, crc);
+  return lca_lock (fd, CONFIG_ZONE, crc);
 
 }
 
 
-enum DEVICE_STATE personalize (int fd, enum DEVICE_STATE goal,
-                               struct key_container *keys)
+enum DEVICE_STATE
+eclet_personalize (int fd, enum DEVICE_STATE goal,
+                   struct key_container *keys)
 {
 
   enum DEVICE_STATE state = lca_get_device_state (fd);
@@ -102,7 +103,7 @@ enum DEVICE_STATE personalize (int fd, enum DEVICE_STATE goal,
   if (state >= goal)
     return state;
 
-  if (set_config_zone (fd) && lock_config_zone (fd, state))
+  if (eclet_set_config_zone (fd) && lock_config_zone (fd, state))
     {
       state = STATE_INITIALIZED;
       assert (lca_get_device_state (fd) == state);
@@ -125,7 +126,7 @@ enum DEVICE_STATE personalize (int fd, enum DEVICE_STATE goal,
           /*     lca_free_octet_buffer (data_zone); */
           /*   } */
 
-              if (lock (fd, DATA_ZONE, 0))
+              if (lca_lock (fd, DATA_ZONE, 0))
                 {
                   state = STATE_PERSONALIZED;
                   assert (lca_get_device_state (fd) == state);

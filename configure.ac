@@ -15,7 +15,7 @@
 # You should have received a copy of the GNU General Public License
 # along with EClet.  If not, see <http://www.gnu.org/licenses/>.
 
-AC_INIT([eclet], [0.1.1], [bugs@cryptotronix.com], [eclet], [http://www.github.com/cryptotronix/EClet/])
+AC_INIT([eclet], [0.1.2], [bugs@cryptotronix.com], [eclet], [http://www.github.com/cryptotronix/EClet/])
 AC_PREREQ([2.59])
 AM_INIT_AUTOMAKE([1.10 -Wall no-define])
 AC_CONFIG_MACRO_DIR([m4])
@@ -25,7 +25,7 @@ AC_PROG_CC
 AM_PROG_CC_C_O
 AC_CONFIG_FILES([Makefile doc/Makefile])
 PKG_PROG_PKG_CONFIG
-PKG_CHECK_MODULES([DEPS], [cryptoauth-0.2])
+PKG_CHECK_MODULES([DEPS], [cryptoauth >= 0.7])
 AC_PROG_LIBTOOL
 
 

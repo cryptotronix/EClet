@@ -281,7 +281,7 @@ cli_get_serial_num (int fd, struct arguments *args)
   int result = HASHLET_COMMAND_FAIL;
   assert (NULL != args);
 
-  response = get_serial_num (fd);
+  response = lca_get_serial_num (fd);
   if (NULL != response.ptr)
     {
       output_hex (stdout, response);
@@ -376,7 +376,7 @@ cli_personalize (int fd, struct arguments *args)
   int result = HASHLET_COMMAND_FAIL;
   assert (NULL != args);
 
-  if (STATE_PERSONALIZED != personalize (fd, STATE_PERSONALIZED, NULL))
+  if (STATE_PERSONALIZED != eclet_personalize (fd, STATE_PERSONALIZED, NULL))
     printf ("Failure\n");
   else
     result = HASHLET_COMMAND_SUCCESS;
@@ -394,7 +394,8 @@ cli_read_key_slot (int fd, struct arguments *args)
   assert (NULL != args);
 
   struct lca_octet_buffer buf = {0,0};
-  buf = read32 (fd, DATA_ZONE, slot_to_addr (DATA_ZONE, args->key_slot));
+  uint8_t addr[2] = {0, lca_slot_to_addr (DATA_ZONE, args->key_slot)};
+  buf = lca_read32 (fd, DATA_ZONE, addr);
 
   if (NULL != buf.ptr)
     {
@@ -450,6 +451,10 @@ cli_gen_key (int fd, struct arguments *args)
 int
 cli_ecc_sign (int fd, struct arguments *args)
 {
+
+  return -1;
+
+#ifdef HAVE_GCRYPT
   int result = HASHLET_COMMAND_FAIL;
   assert (NULL != args);
 
@@ -502,12 +507,17 @@ cli_ecc_sign (int fd, struct arguments *args)
 
 
   return result;
+
+#endif
 }
 
 
 int
 cli_ecc_verify (int fd, struct arguments *args)
 {
+
+  return -1;
+#ifdef HAVE_GCRYPT
   int result = HASHLET_COMMAND_FAIL;
   assert (NULL != args);
 
@@ -584,12 +594,14 @@ cli_ecc_verify (int fd, struct arguments *args)
     }
 
   return result;
+#endif
 }
 
 int
 cli_ecc_offline_verify (int fd, struct arguments *args)
 {
-
+  return -1;
+#ifdef HAVE_GCRYPT
   int result = HASHLET_COMMAND_FAIL;
   assert (NULL != args);
 
@@ -654,6 +666,7 @@ cli_ecc_offline_verify (int fd, struct arguments *args)
     }
 
   return result;
+#endif
 }
 
 

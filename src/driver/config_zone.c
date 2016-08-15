@@ -25,6 +25,7 @@
 #include <libcryptoauth.h>
 #include <stdlib.h>
 
+
 struct slot_config make_ecc_key_slot_config ()
 {
   return make_slot_config (1,     /* External Signatures are Enabled */
@@ -46,8 +47,8 @@ struct slot_config make_slot_config (unsigned int read_key, bool check_only,
 {
   struct slot_config s;
 
-  assert (read_key < MAX_SLOTS);
-  assert (write_key < MAX_SLOTS);
+  assert (read_key < LCA_MAX_NUM_DATA_SLOTS);
+  assert (write_key < LCA_MAX_NUM_DATA_SLOTS);
 
   s.read_key = read_key;
   s.check_only = check_only;
@@ -285,7 +286,7 @@ bool write_slot_configs (int fd, enum config_slots slot,
   p += 2;
   serialize_slot_config (s2, p);
 
-  result = write4 (fd, CONFIG_ZONE, addr, to_send);
+  result = lca_write4 (fd, CONFIG_ZONE, addr, to_send);
 
   return result;
 
@@ -382,11 +383,11 @@ bool set_slot_locked_and_temp (int fd)
 
   memcpy (&to_write, slot_locked, sizeof(slot_locked));
 
-  bool result = write4 (fd, CONFIG_ZONE, addr, to_write);
+  bool result = lca_write4 (fd, CONFIG_ZONE, addr, to_write);
   if (result)
     {
       memcpy (&to_write, temp, sizeof(temp));
-      result = write4 (fd, CONFIG_ZONE, addr + 1, to_write);
+      result = lca_write4 (fd, CONFIG_ZONE, addr + 1, to_write);
     }
 
   return result;
@@ -421,7 +422,7 @@ bool set_key_config (int fd)
 }
 
 
-bool set_config_zone (int fd)
+bool eclet_set_config_zone (int fd)
 {
   bool result = false;
 
@@ -443,7 +444,7 @@ bool set_config_zone (int fd)
   uint32_t to_send = 0;
   memcpy (&to_send, &I2C_ADDR_OTP_MODE_SELECTOR_MODE, sizeof (to_send));
 
-  result = write4 (fd, CONFIG_ZONE, I2C_ADDR_ETC_WORD,to_send);
+  result = lca_write4 (fd, CONFIG_ZONE, I2C_ADDR_ETC_WORD,to_send);
 
   for (x=0; x < CONFIG_SLOTS_NUM_SLOTS && result; x++)
     {
@@ -478,14 +479,14 @@ struct slot_config get_slot_config (int fd, unsigned int slot)
   uint8_t *p = (uint8_t *)&data;
 
   const uint32_t OFFSET_TO_SLOT_CONFIGS = 5;
-  uint8_t addr = slot;
+  uint8_t addr[2] = {0x00, slot};
 
   if (slot % 2 != 0)
-    addr -= 1;
+    addr[1] -= 1;
 
-  addr += OFFSET_TO_SLOT_CONFIGS;
+  addr[1] += OFFSET_TO_SLOT_CONFIGS;
 
-  assert (read4 (fd, CONFIG_ZONE, addr, &data));
+  assert (lca_read4 (fd, CONFIG_ZONE, addr, p));
 
   printf ("Raw data %x\n", data);
 
